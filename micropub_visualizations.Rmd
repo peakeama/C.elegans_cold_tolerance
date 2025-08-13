@@ -31,9 +31,6 @@ cold12hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/
 
 #24 hour cold treatment
 cold24hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/24hours_delta_df.csv", header=TRUE)
-
-#1 week cold treatment
-cold1week_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/1week_delta_df.csv", header=TRUE)
 ```
 
 
@@ -128,10 +125,6 @@ rank_delta_12hrs
 #24 hours
 rank_delta_24hrs <- rank_order_delta(cold24hrs_delta_df)
 rank_delta_24hrs
-
-#1 week
-rank_delta_1wk <- rank_order_delta(cold1week_delta_df)
-rank_delta_1wk
 ```
 
 
