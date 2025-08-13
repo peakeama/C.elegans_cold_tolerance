@@ -31,6 +31,9 @@ cold12hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/
 
 #24 hour cold treatment
 cold24hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/24hours_delta_df.csv", header=TRUE)
+
+#1 week cold treatment
+cold1week_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/1week_delta_df.csv", header=TRUE)
 ```
 
 
@@ -125,6 +128,10 @@ rank_delta_12hrs
 #24 hours
 rank_delta_24hrs <- rank_order_delta(cold24hrs_delta_df)
 rank_delta_24hrs
+
+#1 week
+rank_delta_1wk <- rank_order_delta(cold1week_delta_df)
+rank_delta_1wk
 ```
 
 
@@ -436,6 +443,7 @@ treatment24_delta_plot
 
 
 Proportional differences
+NOTE: proportional differences are comparable to delta, so we chose to only include delta plots in the manuscript.
 ```{r}
 #Calculate proportional effect of cold treatment
 cold24hrs_delta_df <- proportional_effect(cold24hrs_delta_df)
@@ -637,6 +645,7 @@ Fig1_panelC
 
 
 ## combine all panels to make figure 1 
+NOTE: did not include 1 week cold treatment in manuscript because the treatment was too harsh and most of the variation likely came from the 1 week L1 starvation rather than the cold treatment. 
 
 ```{r}
 #Make figure 
