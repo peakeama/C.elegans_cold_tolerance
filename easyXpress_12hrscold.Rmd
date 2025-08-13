@@ -2,9 +2,7 @@
 title: "easyXpress 12 hours cold trial"
 author: "Amanda Peake"
 date: "2024-12-17"
-output: html_document
-editor_options: 
-  chunk_output_type: console
+output: github_document
 ---
 
 # R version and packages needed
