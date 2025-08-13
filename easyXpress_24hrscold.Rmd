@@ -101,16 +101,9 @@ checkObjs(data = uf, OF = "filter", strain, notes)
 ```
 
 
-Flag objects which are likely debris or improperly segmented worms
-```{r}
-#cl <- classifierOF(data = uf)
-```
-
-
 Flag objects with extreme worm values
 ```{r, collapse=TRUE}
 #flags objects with extremely large worm_length-um values
-#o <- easyXpress::outlierOF(data = cl)
 o <- easyXpress::outlierOF(data = uf)
 
 #check objects
@@ -180,7 +173,9 @@ cw2 <- easyXpress::checkWF(data = ow, strain, replicate)
 cw2$p
 ```
 
+
 Remove all flagged wells from the data
+NOTE: removed QX1211 because of low embryo yield during filtration.
 ```{r, collapse=TRUE}
 #remove wells
 fw <- filterWF(data = ow, rmVars = TRUE)
@@ -261,9 +256,8 @@ strain_tukey
 
 
 Calculate broad sense heritability
-H^2 = 2751.8/(2751.8+1133.2) = 70.83%
-{old value when cl dataframe was not passed to next step as it should have been: H^2 = 4034.1/(2240.5 + 4034.1) = 64.29%}
 
+Heritability = 3583.1/(3583.1 + 2049.7) = 0.64
 ```{r}
 #mixed model 
 H_strain_model <- lmer(median_wormlength_um_reg_delta ~ (1|strain), data = treatment_df)
@@ -273,26 +267,6 @@ print(vc,comp=c("Variance"))
 
 
 ```
-
-
-Make a textfile to submit to CaeNDR to calculate broad sense heritability
-```{r}
-#Make a dataframe
-H_CaeNDR_df <- data.frame(AssayNumber = treatment_df$replicate, 
-                          Strain = treatment_df$strain, 
-                          TraitName = treatment_df$Metadata_Experiment, 
-                          Replicate = treatment_df$Metadata_Well, 
-                          Value = treatment_df$median_wormlength_um_reg_delta)
-
-#Format dataframe to match CaeNDR 
-#H_CaeNDR_df$AssayNumber <- as.numeric(sub("p", "", H_CaeNDR_df$AssayNumber))
-H_CaeNDR_df$Replicate <- as.numeric(sub("A|B|C|D|E|F|G|H", "", H_CaeNDR_df$Replicate))
-
-#export H_CaeNDR_df to txt file
-#write.table(H_CaeNDR_df, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/24hrscold/24hrscold/heritability_CaeNDR_df.tsv", row.names = FALSE, col.names = TRUE, sep = "\t", quote = FALSE)
-
-```
-
 
 
 Make a box plot to compare median deltas 
@@ -332,16 +306,13 @@ treatment_delta_plot <- ggplot(treatment_df, aes(x = strain, y = median_wormleng
   geom_text(data=plot_tukey_groups, aes(x= Row.names, y = Q75, label = groups), size =5, vjust = -2, hjust =-1, color = "blue")
   
 treatment_delta_plot
-
-
-
 ```
 
 
 
-## Visualize for comparison for gwas briggsea
+## Visualize for control distribution
 ```{r}
-## Visualize comparison for Briggsae Assay 1
+## Visualize for control distribution
 #make control dataframe
 control_df <- del %>%
   dplyr::filter(notes == "control")
@@ -351,7 +322,6 @@ control_means_df <- control_df %>%
   group_by(strain) %>%
   summarise(wormlength_mean_control = mean(median_wormlength_um, na.rm = TRUE))
 ```
-
 
 
 Plot control distribution
@@ -373,76 +343,7 @@ control_distribution_plot
 ```
 
 
-Amanda fooling around testing the delta dataframe
-```{r}
-#make a test dataframe
-test_df <- del
 
-#check if delta is the residual effects subtracting from eachother
-test_df$control_reg_minus_well_median_reg <- test_df$median_wormlength_um_reg-test_df$control_median_wormlength_um_reg
-
-#Make a dataframe with the control median lengths for the control
-test_df2 <- test_df  %>% 
-     dplyr::filter(notes == "control") %>% 
-     dplyr::group_by(strain) %>% 
-     dplyr::summarise(
-     uncorrected_control_mean = median(median_wormlength_um, na.rm = TRUE)) 
-
-#add uncorrected_control_means to test_df
-test_df <- dplyr::left_join(test_df, test_df2, by = "strain")
-
-#Calculate delta with residual corrected values
-test_df$corrected_control <- test_df$uncorrected_control_mean + test_df$control_median_wormlength_um_reg
-
-test_df$corrected_well_median <- test_df$median_wormlength_um + test_df$median_wormlength_um_reg
-
-test_df$corrected_delta <- test_df$corrected_well_median - test_df$corrected_control
-
-
-#make treatment dataframe
-treatment24hrs_df <- test_df %>%
-  dplyr::filter(notes == "treatment")
-
-
-#run annova
-annova_24hrs <- stats::aov(corrected_delta ~ strain, data = treatment24hrs_df)
-summary(annova_24hrs)
-
-#run Tukey HSD
-tukey_24hrs <- agricolae::HSD.test(annova_24hrs, trt = "strain")
-tukey_24hrs
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups24 <- merge(tukey_24hrs$means, tukey_24hrs$groups, by = "row.names")
-
-#Set order of strains based on sampling latitude 
-treatment24hrs_df$strain <- factor(treatment24hrs_df$strain)
-
-#set height for tukey labels
-plot_tukey_groups24$text_plot_height <- 110
-
-#Box plot
-treatment24_delta_plot <- ggplot(treatment24hrs_df, aes(x = strain, y = corrected_delta)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
-  xlab("Strain") + 
-  ylab("Normalized Animal\nLength (µm)") +
-  theme_classic() + 
-  geom_text(data=plot_tukey_groups24, 
-            aes(x= Row.names, y = text_plot_height, label = groups), 
-            size = 3.5, 
-            color = "blue") + 
-  coord_cartesian(clip = "off") + 
-  theme(
-    axis.title.y = element_text(size = 10), 
-    axis.title.x = element_text(size = 10), 
-    axis.text.x = element_text(size = 8)
-  )
-  
-treatment24_delta_plot
-
-```
 
 
 
