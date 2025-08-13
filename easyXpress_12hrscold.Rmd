@@ -1,0 +1,317 @@
+---
+title: "easyXpress 12 hours cold trial"
+author: "Amanda Peake"
+date: "2024-12-17"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# R version and packages needed
+```{r}
+R.Version()$version.string
+
+#easyXpress
+#devtools::install_github("AndersenLab/easyXpress")
+
+library(easyXpress)
+library(tidyverse)
+library(ggplot2)
+library(agricolae)
+library(lme4)
+library(dplyr)
+library(caret)
+```
+
+
+## Load data
+```{r}
+#Read in data 
+cold_12hrs_data <- easyXpress::readXpress(filedir = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127",
+                                          rdafile = "NA_Analysis-20241127.RData",
+                                          design = TRUE, 
+                                          doseR = FALSE
+                                          )
+
+
+#model selection
+ms <- easyXpress::modelSelection(cold_12hrs_data$raw_data)
+
+```
+
+
+## Flag objects
+```{r}
+#flag objects that are close to the edge of the well that are difficult to segment properly
+ef <- edgeOF(data = ms)
+
+#flag objects that are found within the same primary object which are often debris or improperly segmented worms
+cf <- clusterOF(data = ef)
+
+
+```
+
+Check proportion of flags in each plate
+```{r}
+#Check flags
+c1 <- checkOF(data = cf, strain, notes)
+c1$p
+```
+
+Check distribution of object length for each plate
+```{r}
+#visualize size distribution of the ojbect by grouping variables
+c2 <- checkObjs(data = cf, OF = "filter", strain, notes)
+c2
+
+```
+
+Check if small objects are debris
+```{r}
+#Add variables that describe the PATH to processed images and well labels
+cm <- cf %>%
+  dplyr::mutate(i.dir = dplyr::case_when(Metadata_Experiment == "cold12hrs" ~ "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/processed_images/", 
+                                         TRUE ~ NA_character_), 
+                w.lab = paste(Metadata_Plate, strain, sep = "_"))
+
+#Check models 
+# cm.out <- checkModels(data = cm, 
+#                       Metadata_Experiment, Metadata_Plate, 
+#                       proc.img.dir = "i.dir", 
+#                       well.label = "w.lab", 
+#                       out.dir = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/checkModels/out/")
+
+
+```
+
+Remove objects less than 100um and MDHD 
+```{r}
+#add the user variable that will be converted into a flag
+u = cm %>%
+  dplyr::mutate(user = dplyr::case_when(worm_length_um < 165 ~ "junk",
+                                        model == "MDHD" ~ "junk",
+                                        #strain == "QX1211" ~ "junk", #QX1211 wells did not have any worms in them
+                                        TRUE ~ NA_character_))
+
+#specify user variable as the flag 
+uf <- easyXpress::userOF(data= u, user)
+
+#check data again
+checkObjs(data = uf, OF = "filter", strain, notes)
+
+```
+
+
+Flag objects which are likely debris or improperly segmented worms
+```{r}
+#cl <- classifierOF(data = uf)
+```
+
+Flag objects with extreme worm values
+```{r}
+#flags objects with extremely large worm_length-um values
+#o <- easyXpress::outlierOF(data = cl)
+o <- easyXpress::outlierOF(data = uf)
+
+#check objects
+checkObjs(data = o, OF = 'filter', strain, notes)
+
+#check propotion of flags
+co2 <- checkOF(data = o, strain, notes)
+co2
+```
+
+View wells to see what data is worth keeping
+```{r}
+#set seed to select 8 random flagged well with flags
+set.seed(99)
+
+#set the flags and filter data
+o2 <- easyXpress::setOF(data = o) %>%
+  #randomly sample 8 wells
+  dplyr::filter(well.id %in% sample(well.id, size = 8))
+
+#make overlay
+ vo1 <- easyXpress::viewOverlay(data = o2,
+                         proc.img.dir = "i.dir",
+                         well.label = "w.lab",
+                         obj.label = "model",
+                         text.anno = "objectFlag",
+                         # save to example dir
+                         file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/viewOverlay/overlay.png")
+```
+
+remove all flagged object from the data
+```{r}
+#processed object dataset
+proc.objs <- easyXpress::filterOF(o, rmVars = TRUE)
+```
+
+##Flag wells
+
+NOTE: did not check for variation between bleaches because all measurements were taken from the same bleach prep. 
+
+Remove flagged objects, summarize data within each well and drop all object related variables from the data to prepare for flagging wells. 
+```{r}
+raw.wells <- easyXpress::summarizeWells(data = o)
+```
+
+Flag wells that have too many or too few objects in them
+```{r}
+#Make a tf dataframe 
+tf <- easyXpress::titerWF(data = raw.wells,
+                          Metadata_Experiment, bleach, strain, replicate,
+                          doseR = FALSE)
+
+#check the number of objects in each well
+n <- easyXpress::nWF(data = tf$d, strain, notes, max = 60, min = 3)
+n$p
+
+#flag wells with extreme outlier values
+ow <- easyXpress::outlierWF(data = n$d, 
+                            Metadata_Experiment, strain, replicate, notes)
+
+#check flagged outlier wells by control vs treatment
+cw1 <- easyXpress::checkWF(data = ow, strain, notes)
+cw1$p
+
+#check flagged outlier wells be plate
+cw2 <- easyXpress::checkWF(data = ow, strain, replicate)
+cw2$p
+```
+
+Remove all flagged wells from the data
+NOTE: removed QX1211 because those wells should be empty - all wells but 1 got removed by the filters
+```{r}
+#remove wells
+fw <- filterWF(data = ow, rmVars = TRUE)
+
+#check balance to see fraction retained after flags are filtered
+cb <- checkBalance(data = fw, strain, notes, 
+                   design = cold_12hrs_data$design, 
+                   x = replicate)
+cb$p
+
+#remove QX1211 
+drop <- fw %>%
+  dplyr::mutate(b.filter =
+                  dplyr::case_when(strain == "QX1211" ~  "drop",
+                                   TRUE ~ "keep")) %>%
+  dplyr::filter(b.filter == "keep") %>%
+  dplyr::select(-b.filter)
+
+
+#check data after removing problematic strains or plates
+ce1 <- easyXpress::checkEff(data = drop, strain, 
+                            x = notes, 
+                            y = median_wormlength_um, 
+                            fill = Metadata_Plate, 
+                            scales = "free_x"
+                           )
+ce1
+
+```
+
+
+## Finalize results
+
+Account for differences between replicates
+```{r}
+#regress the effect of independent plates (eg. blocks) for each strain
+drop$replicate <- as.character(drop$replicate)
+
+reg <- easyXpress::regEff(data = drop,
+                          d.var = median_wormlength_um, #dependent variable
+                          c.var = replicate
+                          )
+
+reg$p2
+```
+
+
+Calculate difference between control and treatment. delta() calculates the difference in well summary statistics between the experimental condition and the median control condition within a group. 
+```{r}
+#Calculate difference
+del <- easyXpress::delta(data = reg$d, 
+                         replicate, strain, 
+                         WF = "filter", 
+                        vars = c("median_wormlength_um_reg"),
+                         doseR = FALSE)
+
+#write del to csv to be used in manuscript visualisation script
+write.csv(del, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_delta_df.csv", row.names = FALSE)
+
+```
+
+
+Make a dataframe to compared treatment deltas
+```{r}
+#Make dataframe
+treatment_df <- subset(del, del$notes == "treatment")
+
+#run an anova to test for differences between strains
+strain_annova <- aov(median_wormlength_um_reg_delta ~ strain, data = treatment_df)
+summary(strain_annova)
+
+#Tukey HSD 
+strain_tukey <- HSD.test(strain_annova, trt = "strain")
+strain_tukey
+
+
+```
+
+
+Calculate broad sense heritability 
+
+H^2 = 627.87/(627.87+555.70) = 53.05%
+{old value when cl dataframe was not passed to next step as it should have been: H^2 = 654.97/(654.97+535.37) = 55.02% }
+```{r}
+#mixed model 
+H_strain_model <- lmer(median_wormlength_um_reg_delta ~ (1|strain), data = treatment_df)
+summary(H_strain_model)
+vc <- VarCorr(H_strain_model)
+print(vc,comp=c("Variance"))
+```
+
+
+Make a box plot to compare median deltas 
+
+```{r}
+#Set order of strains based on sampling latitude 
+treatment_df$strain <- factor(treatment_df$strain, levels = c("ECA1286", "DL238", "CB4856", "CX11314", "JU394", "N2", "JU1200"), ordered = TRUE)
+
+#Make dataframe for tukey groupings for the plot 
+plot_tukey_groups <- merge(strain_tukey$means, strain_tukey$groups, by = "row.names")
+
+
+#Box plot comparing median deltas for each strain
+treatment_delta_plot <- ggplot(treatment_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
+  geom_boxplot(outlier.shape = NA) +
+  #geom_violin() +
+  geom_jitter(shape=16, position=position_jitter(0.2), aes(color = replicate)) + 
+  ggtitle("A) 12 hrs at 4°C") + 
+  xlab("strain ordered by latitude") + 
+  ylab("Δ median length per well") +
+  theme_classic() + 
+  theme(plot.title = element_text(size=16, face = "bold")) + 
+  geom_text(data=plot_tukey_groups, aes(x= Row.names, y = Q75, label = groups), size =5, vjust = -1.25, hjust =-1)
+  
+treatment_delta_plot
+
+#Box plots not colored by replicate 
+treatment_delta_plot <- ggplot(treatment_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
+  geom_boxplot(outlier.shape = NA) +
+  #geom_violin() +
+  geom_jitter(shape=16, position=position_jitter(0.2)) + 
+  ggtitle("A) 12 hrs at 4°C") + 
+  xlab("strain ordered by latitude") + 
+  ylab("Δ median length per well") +
+  theme_classic() + 
+  theme(plot.title = element_text(size=16, face = "bold")) + 
+  geom_text(data=plot_tukey_groups, aes(x= Row.names, y = Q75, label = groups), size =5, vjust = -1.25, hjust =-1.25, color = "blue")
+  
+treatment_delta_plot
+
+```
+
+
