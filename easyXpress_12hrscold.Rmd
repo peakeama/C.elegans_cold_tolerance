@@ -102,15 +102,9 @@ checkObjs(data = uf, OF = "filter", strain, notes)
 ```
 
 
-Flag objects which are likely debris or improperly segmented worms
-```{r}
-#cl <- classifierOF(data = uf)
-```
-
 Flag objects with extreme worm values
 ```{r}
 #flags objects with extremely large worm_length-um values
-#o <- easyXpress::outlierOF(data = cl)
 o <- easyXpress::outlierOF(data = uf)
 
 #check objects
@@ -180,8 +174,9 @@ cw2 <- easyXpress::checkWF(data = ow, strain, replicate)
 cw2$p
 ```
 
+
 Remove all flagged wells from the data
-NOTE: removed QX1211 because those wells should be empty - all wells but 1 got removed by the filters
+NOTE: removed QX1211 because of low embryo yield during filtration. 
 ```{r}
 #remove wells
 fw <- filterWF(data = ow, rmVars = TRUE)
@@ -239,7 +234,7 @@ del <- easyXpress::delta(data = reg$d,
                          doseR = FALSE)
 
 #write del to csv to be used in manuscript visualisation script
-write.csv(del, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_delta_df.csv", row.names = FALSE)
+#write.csv(del, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_delta_df.csv", row.names = FALSE)
 
 ```
 
@@ -263,8 +258,7 @@ strain_tukey
 
 Calculate broad sense heritability 
 
-H^2 = 627.87/(627.87+555.70) = 53.05%
-{old value when cl dataframe was not passed to next step as it should have been: H^2 = 654.97/(654.97+535.37) = 55.02% }
+Heritability = 637.93/(637.93 + 735.21) = 0.46
 ```{r}
 #mixed model 
 H_strain_model <- lmer(median_wormlength_um_reg_delta ~ (1|strain), data = treatment_df)
@@ -275,7 +269,6 @@ print(vc,comp=c("Variance"))
 
 
 Make a box plot to compare median deltas 
-
 ```{r}
 #Set order of strains based on sampling latitude 
 treatment_df$strain <- factor(treatment_df$strain, levels = c("ECA1286", "DL238", "CB4856", "CX11314", "JU394", "N2", "JU1200"), ordered = TRUE)
