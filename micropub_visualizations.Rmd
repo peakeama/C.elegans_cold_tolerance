@@ -15,6 +15,7 @@ library(tidyverse)
 library(ggplot2)
 library(agricolae)
 library(lme4)
+library(lmerTest)
 library(dplyr)
 library(ggpubr)
 library(gridExtra)
@@ -27,39 +28,71 @@ Note: checked that all warning msgs for "package <...> was built under R version
 ## Import data
 ```{r}
 #12 hour cold treatment
-cold12hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_delta_df.csv", header=TRUE)
+cold12hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_manuscript_df.csv", header=TRUE)
 
 #24 hour cold treatment
-cold24hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/24hours_delta_df.csv", header=TRUE)
+cold24hrs_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/24hours_manuscript_df.csv", header=TRUE)
 
-#1 week cold treatment
-cold1week_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/1week_delta_df.csv", header=TRUE)
+###1 week cold treatment
+###cold1week_delta_df <- read.csv("C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/1week_delta_df.csv", #header=TRUE)
 ```
 
 
 ## Make functions
 
-Calculate broad sense heritability
+Change some dataframe columns from being human readable to be more machine friendly
+
 ```{r}
-heritability <- function(dataframe, phenotype){
-  
-  #extract variance components from linear model
-  H_strain_model <- lme4::lmer(phenotype ~ (1|strain), data = dataframe)
-  vc <- lme4::VarCorr(H_strain_model)
-
-  #get variance compenents dataframe
-  variance_df <- as.data.frame(vc,comp=c("Variance"))
-
-  # assign variance compoenents from model (vcov column in dataframe)
-  strain_variance <- variance_df$vcov[variance_df$grp == "strain"]
-  residual_variance <- variance_df$vcov[variance_df$grp == "Residual"]
-
-  # calculate broad sense heritability
-  H2 <- strain_variance/(strain_variance + residual_variance)
-  H2
-  
+format_colnames <- function(dataframe) { 
+  dataframe %>% 
+  dplyr::rename(Well_id = well.ID, 
+                Plate_design = Plate.Design, 
+                Well_strain = Well.Strain, 
+                mean_wormlength_um = Mean.wormlength..µm.,
+                min_wormlength_um = Minimum.wormlength..µm., 
+                q10_wormlength_um = q10.wormlength..µm., 
+                q25_wormlength_um = q25.wormlength..µm., 
+                median_wormlength_um = Median.wormlength..µm., 
+                sd_wormlength_um = Standard.Deviation.wormlength..µm., 
+                q75_wormlength_um = q75.wormlength..µm., 
+                q90_wormlength_um = q90.wormlength..µm., 
+                max_wormlength_um = Maximum.wormlength..µm.,
+                cv_wormlength_um = Coefficient.of.variation.wormlength..µm., 
+                n = Number.of.worms, 
+                control_median_wormlength_um = Control.median.wormlength..µm., 
+                median_wormlength_um_delta = Delta.median.wormlength..µm.
+  )
 }
 
+```
+
+
+
+Calculate broad sense heritability
+```{r}
+###heritability <- function(dataframe, phenotype){
+#  
+#  #extract variance components from linear model
+#  H_strain_model <- lme4::lmer(phenotype ~ Plate_design + Treatment + (1|Strain) + (1|Strain:Treatment), data = #dataframe)
+#  vc <- lme4::VarCorr(H_strain_model)
+#
+#  #get variance compenents dataframe
+#  variance_df <- as.data.frame(vc,comp=c("Variance"))
+#
+#  # assign variance compoenents from model (vcov column in dataframe)
+#  strain_treatment_variance <- variance_df$vcov[variance_df$grp == "Strain:Treatment"]
+#  strain_variance <- variance_df$vcov[variance_df$grp == "Strain"]
+#  residual_variance <- variance_df$vcov[variance_df$grp == "Residual"]
+#
+#  # calculate broad sense heritability
+#  H2 <- strain_variance/(strain_variance + residual_variance + strain_treatment_variance)
+#  print(paste0("strain heritability: ", H2))
+#  
+#  H2_GxE <- strain_treatment_variance/(strain_treatment_variance + strain_variance + residual_variance)
+#  print(paste0("strain*treatment heritability: ", H2_GxE))
+#  
+#}
+###
 
 ```
 
@@ -68,11 +101,11 @@ Get rank order delta values
 ```{r}
 rank_order_delta <- function(dataframe) {
   dataframe  %>% 
-    dplyr::filter(notes == "treatment") %>% 
-    dplyr::group_by(strain) %>% 
+    dplyr::filter(Treatment == "treatment") %>% 
+    dplyr::group_by(Strain) %>% 
     dplyr::summarise(
-      delta_mean = mean(median_wormlength_um_reg_delta, na.rm = TRUE), 
-      delta_median = median(median_wormlength_um_reg_delta, na.rm = TRUE)) %>% 
+      delta_mean = mean(median_wormlength_um_delta, na.rm = TRUE), 
+      delta_median = median(median_wormlength_um_delta, na.rm = TRUE)) %>% 
     dplyr::arrange(delta_mean)
 }
 ```
@@ -80,24 +113,24 @@ rank_order_delta <- function(dataframe) {
 
 Calculate proportional differences
 ```{r}
-proportional_effect <- function(dataframe) { 
- 
-  #calculate control means for each strain and replicate
-  proportional_control_df <- dataframe %>%
-    dplyr::filter(notes == "control") %>% 
-    dplyr::group_by(strain, replicate) %>%
-    dplyr::summarise(raw_control_mean = mean(median_wormlength_um))
-  
-  #add control values to original dataframe
-  dataframe <- dplyr::left_join(dataframe, proportional_control_df, by = c("strain", "replicate"))
-  
-  #calculate proportional reduction for each well
-  dataframe$proportional_diff <- dataframe$median_wormlength_um/dataframe$raw_control_mean
-  
-  #return modified dataframe
-  dataframe
-}
-
+###proportional_effect <- function(dataframe) { 
+# 
+#  #calculate control means for each strain and replicate
+#  proportional_control_df <- dataframe %>%
+#    dplyr::filter(Treatment == "control") %>% 
+#    dplyr::group_by(Strain, Plate_design) %>%
+#    dplyr::summarise(raw_control_mean = mean(median_wormlength_um))
+#  
+#  #add control values to original dataframe
+#  dataframe <- dplyr::left_join(dataframe, proportional_control_df, by = c("Strain", "Plate_design"))
+#  
+#  #calculate proportional reduction for each well
+#  dataframe$proportional_diff <- dataframe$median_wormlength_um/dataframe$raw_control_mean
+#  
+#  #return modified dataframe
+#  dataframe
+#}
+###
 ```
 
 
@@ -105,8 +138,8 @@ Get rank order control values
 ```{r}
 rank_order_control <- function(dataframe) {
   dataframe  %>% 
-    dplyr::filter(notes == "control") %>% 
-    dplyr::group_by(strain) %>% 
+    dplyr::filter(Treatment == "control") %>% 
+    dplyr::group_by(Strain) %>% 
     dplyr::summarise(
       control_mean = mean(median_wormlength_um, na.rm = TRUE), 
       control_median = median(median_wormlength_um, na.rm = TRUE)) %>% 
@@ -119,6 +152,13 @@ rank_order_control <- function(dataframe) {
 
 ## Get values for results section
 
+Format column names
+```{r}
+cold12hrs_delta_df <- format_colnames(cold12hrs_delta_df)
+cold24hrs_delta_df <- format_colnames(cold24hrs_delta_df)
+```
+
+
 Rank order of delta
 ```{r}
 #12 hours
@@ -129,9 +169,9 @@ rank_delta_12hrs
 rank_delta_24hrs <- rank_order_delta(cold24hrs_delta_df)
 rank_delta_24hrs
 
-#1 week
-rank_delta_1wk <- rank_order_delta(cold1week_delta_df)
-rank_delta_1wk
+###1 week
+#rank_delta_1wk <- rank_order_delta(cold1week_delta_df)
+###rank_delta_1wk
 ```
 
 
@@ -145,223 +185,267 @@ rank_control_12hrs
 rank_control_24hrs <- rank_order_control(cold24hrs_delta_df)
 rank_control_24hrs
 
-#1 week
-rank_control_1wk <- rank_order_control(cold1week_delta_df)
-rank_control_1wk
+###1 week
+#rank_control_1wk <- rank_order_control(cold1week_delta_df)
+###rank_control_1wk
 ```
 
 
 Run a spearman rank correlation for control length vs treatment delta. 
 ```{r}
 #Make correlation test dataframes
-cor_12hrs_df <- merge(rank_control_12hrs, rank_delta_12hrs, by = "strain")
-cor_24hrs_df <- merge(rank_control_24hrs, rank_delta_24hrs, by = "strain")
-cor_1wk_df <- merge(rank_control_1wk, rank_delta_1wk, by = "strain")
+cor_12hrs_df <- merge(rank_control_12hrs, rank_delta_12hrs, by = "Strain")
+cor_24hrs_df <- merge(rank_control_24hrs, rank_delta_24hrs, by = "Strain")
+###cor_1wk_df <- merge(rank_control_1wk, rank_delta_1wk, by = "Strain")
 
 #12 hours - correlation and scatter plot
 cor.test(cor_12hrs_df$control_mean, cor_12hrs_df$delta_mean, method = "spearman")
 cor.test(cor_12hrs_df$control_mean, cor_12hrs_df$delta_mean, method = "pearson")
-ggplot(cor_12hrs_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  theme_classic()
+###ggplot(cor_12hrs_df, aes(x = delta_mean, y = control_mean)) + 
+#  geom_point() + 
+### theme_classic()
 
 #24 hours - correlation and scatter plot
 cor.test(cor_24hrs_df$control_mean, cor_24hrs_df$delta_mean, method = "spearman")
 cor.test(cor_24hrs_df$control_mean, cor_24hrs_df$delta_mean, method = "pearson")
-ggplot(cor_24hrs_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  theme_classic()
+###ggplot(cor_24hrs_df, aes(x = delta_mean, y = control_mean)) + 
+#  geom_point() + 
+# theme_classic()
 
-#1 week - correlation and scatter plot
-cor.test(cor_1wk_df$control_mean, cor_1wk_df$delta_mean, method = "spearman")
-cor.test(cor_1wk_df$control_mean, cor_1wk_df$delta_mean, method = "pearson")
-ggplot(cor_1wk_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  theme_classic()
+##1 week - correlation and scatter plot
+#cor.test(cor_1wk_df$control_mean, cor_1wk_df$delta_mean, method = "spearman")
+#cor.test(cor_1wk_df$control_mean, cor_1wk_df$delta_mean, method = "pearson")
+#ggplot(cor_1wk_df, aes(x = delta_mean, y = control_mean)) + 
+#  geom_point() + 
+###  theme_classic()
 ```
 
 
-Add scatter plot of control vs delta
+## 12 hour cold treatment
+
+Linear model to check for differences in length between treatment groups and strains
 ```{r}
-#Make correlation test dataframes
-cor_12hrs_df <- merge(rank_control_12hrs, rank_delta_12hrs, by = "strain")
+#make sure all categorical variables that will be in the model are factors
+cold12hrs_delta_df$Plate_design <- as.factor(cold12hrs_delta_df$Plate_design)
+cold12hrs_delta_df$Treatment <- as.factor(cold12hrs_delta_df$Treatment)
+cold12hrs_delta_df$Strain <- as.factor(cold12hrs_delta_df$Strain)
 
-#spearman correlation
-spearman12hrs <- cor.test(cor_12hrs_df$control_mean, cor_12hrs_df$delta_mean, method = "spearman")
+#Run linear model to see if treatment is significant
+lm_12hrs <- lmerTest::lmer(median_wormlength_um ~ Plate_design + Treatment + (1|Strain) + (1|Strain:Treatment), data = cold12hrs_delta_df)
+summary(lm_12hrs)
+anova(lm_12hrs)
 
-#scatterplot
-control12_plot <-ggplot(cor_12hrs_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  xlab("Mean Normalized Animal Length (µm)") + 
-  ylab("Control Mean\nAnimal Length (µm)") + 
-  ggpubr::stat_cor(method = "pearson", 
-           label.x = min(cor_12hrs_df$delta_mean), 
-           label.y = min(cor_12hrs_df$control_mean)) +
-  theme_classic() + 
-  theme(
-    axis.title.y = element_text(size = 10), 
-    axis.title.x = element_text(size = 10)
-  ) + 
-  geom_smooth(method = "lm", se = FALSE)
+###full_model <- lmerTest::lmer(median_wormlength_um ~ Plate_design + Treatment + (1|Strain) + (1|Strain:Treatment), data = ###cold12hrs_delta_df, REML = TRUE) 
+###
+###reduced_model <- lmerTest::lmer(median_wormlength_um ~ Plate_design + Treatment + (1|Strain:Treatment), data = cold12hrs_delta_df, REML = ###TRUE) 
+###
+###test <- anova(full_model, reduced_model, refit = FALSE)
+###liklihood_reduced <- as.numeric(logLik(reduced_model))
+###liklihood_full <- as.numeric(logLik(full_model))
+###liklihood_dif <- liklihood_full-liklihood_reduced
+###
+###
+###summary(test)
 
-control12_plot
+
+#Likelihood ratio test to see if strain and strain*treatment terms are significant
+lrt_12hrs <- lmerTest::ranova(lm_12hrs)
+lrt_12hrs
+
+#Adjust p-values by dividing by 2 because when testing the effect of a random effect the null model has a variance of 0. 
+lrt_12hrs_strain_padj <- (lrt_12hrs$`Pr(>Chisq)`[2])/2
+lrt_12hrs_strain_padj
+
+lrt_12hrs_strain_treatment_padj <- (lrt_12hrs$`Pr(>Chisq)`[3])/2
+lrt_12hrs_strain_treatment_padj
+
+#Calculate heritability 
+vc_12hrs <- as.data.frame(lme4::VarCorr(lm_12hrs), comp = c("Variance"))
+strain_treatment_variance_12hrs <- vc_12hrs$vcov[vc_12hrs$grp == "Strain:Treatment"]
+strain_variance_12hrs <- vc_12hrs$vcov[vc_12hrs$grp == "Strain"]
+residual_variance_12hrs <- vc_12hrs$vcov[vc_12hrs$grp == "Residual"]
+
+H2_strain_12hrs <- strain_variance_12hrs/(strain_variance_12hrs + residual_variance_12hrs + strain_treatment_variance_12hrs)
+H2_strain_12hrs
+
+H2_strain_treatment_12hrs <- strain_treatment_variance_12hrs/(strain_variance_12hrs + residual_variance_12hrs + strain_treatment_variance_12hrs)
+H2_strain_treatment_12hrs
 ```
 
 
-## Figure 1A: 12 hour cold treatment
-
-Delta box plot
+Delta anova and box plot
 ```{r}
-#Make treatementdataframe
+#Make treatement dataframe
 treatment12hrs_df <- cold12hrs_delta_df %>%
-  dplyr::filter(notes == "treatment")
-
-#run annova
-annova_12hrs <- stats::aov(median_wormlength_um_reg_delta ~ strain, data = treatment12hrs_df)
-summary(annova_12hrs)
-
-#run Tukey HSD
-tukey_12hrs <- agricolae::HSD.test(annova_12hrs, trt = "strain")
-tukey_12hrs
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups12 <- merge(tukey_12hrs$means, tukey_12hrs$groups, by = "row.names")
-
-#calculate hertiability
-heritability12 <- heritability(treatment12hrs_df, treatment12hrs_df$median_wormlength_um_reg_delta)
-heritability12
-
-#Set order of strains based on sampling latitude 
-treatment12hrs_df$strain <- factor(treatment12hrs_df$strain)
-
-#set height for tukey labels
-plot_tukey_groups12$text_plot_height <- -15
-
-#create heritability text dataframe
-heritability12_rounded <- round(heritability12, digits = 2)
-heritability12_plot_df <- data.frame(
-  x = 1,
-  y = 15,
-  label = I(list(bquote(italic(H)^2 == .(heritability12_rounded))))  # Needs to be a character for now
-)
+  dplyr::filter(Treatment == "treatment")
 
 
 #Make box plot
-treatment12_delta_plot <- ggplot(treatment12hrs_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
-  xlab("Strain") + 
-  ylab("Normalized Animal\nLength (µm)") +
-  theme_classic() + 
-  geom_text(data=plot_tukey_groups12, 
-            aes(x= Row.names, y = text_plot_height, label = groups), 
-            size = 3.5, 
-            color = "blue") + 
-  geom_text(data = heritability12_plot_df, 
-            aes(x = x, y = y, label = label), 
-            parse = TRUE, 
-            size = 3.5)  + 
-  coord_cartesian(clip = "off") + 
-  theme(
+treatment12_delta_plot <- ggplot(treatment12hrs_df, aes(x = Strain, y = median_wormlength_um_delta)) + 
+  ggplot2::geom_boxplot(outlier.shape = NA) +
+  ggplot2::geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
+  ggplot2::xlab("Strain") + 
+  ggplot2::ylab("Treatment - Control\nAnimal Length (µm)") +
+  ggplot2::theme_classic() + 
+  ggplot2::theme(
     axis.title.y = element_text(size = 10), 
     axis.title.x = element_text(size = 10), 
     axis.text.x = element_text(size = 8)
-  )
+  ) + 
+  ggplot2::scale_y_continuous(expand = expansion(mult = c(0.05, 0.1)))
 treatment12_delta_plot 
 ```
 
 
-Proportional differences
+Rxn norm for length
 ```{r}
-#Calculate proportional effect of cold treatment
-cold12hrs_delta_df <- proportional_effect(cold12hrs_delta_df)
+#create strain mean dataframe
+rxn_df_12hrs <- cold12hrs_delta_df %>% 
+  dplyr::select(Treatment, Strain, median_wormlength_um) %>%
+  dplyr::group_by(Strain, Treatment) %>% 
+    dplyr::summarise(
+      wormlength_strain_mean = mean(median_wormlength_um, na.rm = TRUE)) %>% 
+  dplyr::mutate(contidition_numeric = case_when(
+    Treatment == "control" ~ 1, 
+    Treatment == "treatment" ~ 2
+  ))
 
-#Make treatementdataframe
-treatment12hrs_df <- cold12hrs_delta_df %>%
-  dplyr::filter(notes == "treatment")
+#Create heritabiliity dataframes so that heritability can be added to plots
+H2_strain_12hrs_plot_df <- data.frame(
+  x = 1.5,
+  y = max(rxn_df_12hrs$wormlength_strain_mean) + 40,
+  label = I(list(bquote(italic({H^2}[strain]) == .(round(H2_strain_12hrs, digits = 2))))))
 
-#run annova
-annova_12hrs_proportion <- stats::aov(proportional_diff ~ strain + replicate, data = treatment12hrs_df)
-summary(annova_12hrs)
-
-#run Tukey HSD
-tukey_12hrs_proportion <- agricolae::HSD.test(annova_12hrs_proportion, trt = "strain")
-tukey_12hrs
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups12_proportion <- merge(tukey_12hrs_proportion$means, tukey_12hrs_proportion$groups, by = "row.names")
-
-
-#Set order of strains based on sampling latitude 
-treatment12hrs_df$strain <- factor(treatment12hrs_df$strain)
-
-#set height for tukey labels
-plot_tukey_groups12_proportion$text_plot_height <- 1
+H2_strain_treatment_12hrs_plot_df <- data.frame(
+  x = 1.5,
+  y = max(rxn_df_12hrs$wormlength_strain_mean) + 20,
+  label = I(list(bquote(italic({H^2}[strain~":"~treatment]) == .(round(H2_strain_treatment_12hrs, digits = 2))))))
 
 
-#Make box plot
-treatment12_delta_plot_proportion <- ggplot(treatment12hrs_df, aes(x = strain, y = proportional_diff)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
-  xlab("Strain") + 
-  ylab("Proportional difference") +
-  theme_classic() + 
-  geom_text(data=plot_tukey_groups12_proportion, 
-            aes(x= Row.names, y = text_plot_height, label = groups), 
-            size = 3.5, 
-            color = "blue") + 
-  coord_cartesian(clip = "off") + 
-  theme(
+#make rxn norm plot
+rxn_plot_12hrs <- ggplot(rxn_df_12hrs, aes(x = contidition_numeric, y=wormlength_strain_mean)) + 
+  ggplot2::geom_line(aes(group=Strain)) + 
+  ggplot2::geom_point() + 
+  ggplot2::scale_x_continuous(breaks = c(1,2), 
+                     limits = c(1,2), 
+                     labels = c("20°C", "4°C")) + 
+  ggplot2::geom_text(data = H2_strain_12hrs_plot_df, 
+            aes(x = x, y = y, label = label), 
+            parse = TRUE, 
+            size = 3.5)  + 
+  ggplot2::geom_text(data = H2_strain_treatment_12hrs_plot_df, 
+            aes(x = x, y = y, label = label), 
+            parse = TRUE, 
+            size = 3.5)  + 
+  ggplot2::xlab("L1 Larval Stage Temperature") + 
+  ggplot2::ylab("Mean Animal Length (µm)") +
+  ggplot2::theme_classic() + 
+  ggplot2::theme(
     axis.title.y = element_text(size = 10), 
     axis.title.x = element_text(size = 10), 
     axis.text.x = element_text(size = 8)
   )
-treatment12_delta_plot_proportion
 
-
-#make comparison plot with delta
-ggarrange(treatment12_delta_plot_proportion, treatment12_delta_plot, ncol = 1)
+rxn_plot_12hrs
 ```
+
 
 
 Add scatter plot of control vs delta
 ```{r}
-#Make correlation test dataframes
-cor_12hrs_df <- merge(rank_control_12hrs, rank_delta_12hrs, by = "strain")
+##Make correlation test dataframes
+#cor_12hrs_df <- merge(rank_control_12hrs, rank_delta_12hrs, by = "Strain")
+#
+##spearman correlation
+#spearman12hrs <- cor.test(cor_12hrs_df$control_mean, cor_12hrs_df$delta_mean, method = "spearman")
+#
+##scatterplot
+#control12_plot <-ggplot(cor_12hrs_df, aes(x = delta_mean, y = control_mean)) + 
+#  geom_point() + 
+#  xlab("Difference in treatment animal length (µm)") + 
+#  ylab("Control animal length (µm)") + 
+#  ggpubr::stat_cor(method = "pearson", 
+#           label.x = min(cor_12hrs_df$delta_mean), 
+#           label.y = min(cor_12hrs_df$control_mean)) +
+#  theme_classic() + 
+#  theme(
+#    axis.title.y = element_text(size = 10), 
+#    axis.title.x = element_text(size = 10)
+#  ) + 
+#  geom_smooth(method = "lm", se = FALSE)
+#
+#control12_plot
+```
 
-#spearman correlation
-spearman12hrs <- cor.test(cor_12hrs_df$control_mean, cor_12hrs_df$delta_mean, method = "spearman")
 
-#scatterplot
-control12_plot <-ggplot(cor_12hrs_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  xlab("Mean Normalized Animal Length (µm)") + 
-  ylab("Control Mean\nAnimal Length (µm)") + 
-  ggpubr::stat_cor(method = "pearson", 
-           label.x = min(cor_12hrs_df$delta_mean), 
-           label.y = min(cor_12hrs_df$control_mean)) +
-  theme_classic() + 
-  theme(
-    axis.title.y = element_text(size = 10), 
-    axis.title.x = element_text(size = 10)
-  ) + 
-  geom_smooth(method = "lm", se = FALSE)
 
-control12_plot
+Proportional differences
+```{r}
+##Calculate proportional effect of cold treatment
+#cold12hrs_delta_df <- proportional_effect(cold12hrs_delta_df)
+#
+##Make treatementdataframe
+#treatment12hrs_df <- cold12hrs_delta_df %>%
+#  dplyr::filter(notes == "treatment")
+#
+##run annova
+#annova_12hrs_proportion <- stats::aov(proportional_diff ~ strain + replicate, data = treatment12hrs_df)
+#summary(annova_12hrs)
+#
+##run Tukey HSD
+#tukey_12hrs_proportion <- agricolae::HSD.test(annova_12hrs_proportion, trt = "strain")
+#tukey_12hrs
+#
+##Make dataframe for tukey groupings for the plot 
+#plot_tukey_groups12_proportion <- merge(tukey_12hrs_proportion$means, tukey_12hrs_proportion$groups, by = "row.names")
+#
+#
+##Set order of strains based on sampling latitude 
+#treatment12hrs_df$strain <- factor(treatment12hrs_df$strain)
+#
+##set height for tukey labels
+#plot_tukey_groups12_proportion$text_plot_height <- 1
+#
+#
+##Make box plot
+#treatment12_delta_plot_proportion <- ggplot(treatment12hrs_df, aes(x = strain, y = proportional_diff)) + 
+#  geom_boxplot(outlier.shape = NA) +
+#  #geom_violin() +
+#  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
+#  xlab("Strain") + 
+#  ylab("Proportional difference") +
+#  theme_classic() + 
+#  geom_text(data=plot_tukey_groups12_proportion, 
+#            aes(x= Row.names, y = text_plot_height, label = groups), 
+#            size = 3.5, 
+#            color = "blue") + 
+#  coord_cartesian(clip = "off") + 
+#  theme(
+#    axis.title.y = element_text(size = 10), 
+#    axis.title.x = element_text(size = 10), 
+#    axis.text.x = element_text(size = 8)
+#  )
+#treatment12_delta_plot_proportion
+#
+#
+##make comparison plot with delta
+#ggarrange(treatment12_delta_plot_proportion, treatment12_delta_plot, ncol = 1)
 ```
 
 
 merge 12 hour plots together to make panel
 ```{r}
 Fig1_panelA <- cowplot::plot_grid(treatment12_delta_plot + 
-                                    theme(axis.title.x = element_blank(), 
-                                          axis.text.x = element_blank(), 
-                                          plot.margin = margin(b = 0.7, t= 0.25, l = 0.2, r =0.25, unit = "cm")
+                                    ggplot2::theme(axis.title.x = element_blank(), 
+                                                   axis.text.x = element_blank(), 
+                                                   plot.margin = margin(b = 0.7, t= 0.25, l = 0.2, r =0.25, unit = "cm")
                                           ),
-                                       control12_plot + 
-                                    theme(axis.title.x =  element_blank()), 
+                                  rxn_plot_12hrs + 
+                                    ggplot2::theme(axis.title.x =  element_blank(), 
+                                                   plot.margin = margin(b = 0.7, t= 0.25, l = 0.2, r =0.25, unit = "cm")) + 
+                                    ggplot2::scale_x_continuous(breaks = c(1,2),
+                                                                limits = c(1,2), 
+                                                                labels = NULL), 
                                   rel_widths = c(3, 2))
 
 Fig1_panelA <- cowplot::ggdraw(Fig1_panelA) + cowplot::draw_label("12-hour cold treatment", 
@@ -375,158 +459,212 @@ Fig1_panelA
 
 
 
-## Figure 1B: 24 hour cold treatment
+## 24 hour cold treatment
+Linear model to check for differences in length between treatment groups and strains
+```{r}
+#make sure all categorical variables that will be in the model are factors
+cold24hrs_delta_df$Plate_design <- as.factor(cold24hrs_delta_df$Plate_design)
+cold24hrs_delta_df$Treatment <- as.factor(cold24hrs_delta_df$Treatment)
+cold24hrs_delta_df$Strain <- as.factor(cold24hrs_delta_df$Strain)
+
+#Run linear model to see if treatment is significant
+lm_24hrs <- lmerTest::lmer(median_wormlength_um ~ Plate_design + Treatment + (1|Strain) + (1|Strain:Treatment), data = cold24hrs_delta_df)
+summary(lm_24hrs)
+anova(lm_24hrs)
+
+#Likelihood ratio test to see if strain and strain*treatment terms are significant
+lrt_24hrs <- lmerTest::ranova(lm_24hrs)
+lrt_24hrs
+
+#Adjust p-values by dividing by 2 because when testing the effect of a random effect the null model has a variance of 0. 
+lrt_24hrs_strain_padj <- (lrt_24hrs$`Pr(>Chisq)`[2])/2
+lrt_24hrs_strain_padj
+
+lrt_24hrs_strain_treatment_padj <- (lrt_24hrs$`Pr(>Chisq)`[3])/2
+lrt_24hrs_strain_treatment_padj
+
+
+#Calculate heritability 
+vc_24hrs <- as.data.frame(lme4::VarCorr(lm_24hrs), comp = c("Variance"))
+strain_treatment_variance_24hrs <- vc_24hrs$vcov[vc_24hrs$grp == "Strain:Treatment"]
+strain_variance_24hrs <- vc_24hrs$vcov[vc_24hrs$grp == "Strain"]
+residual_variance_24hrs <- vc_24hrs$vcov[vc_24hrs$grp == "Residual"]
+
+H2_strain_24hrs <- strain_variance_24hrs/(strain_variance_24hrs + residual_variance_24hrs + strain_treatment_variance_24hrs)
+H2_strain_24hrs
+
+H2_strain_treatment_24hrs <- strain_treatment_variance_24hrs/(strain_variance_24hrs + residual_variance_24hrs + strain_treatment_variance_24hrs)
+H2_strain_treatment_24hrs
+```
+
+
 
 Delta box plots
 ```{r}
 #Make dataframe
 treatment24hrs_df <- cold24hrs_delta_df %>%
-  dplyr::filter(notes == "treatment")
-
-#run annova
-annova_24hrs <- stats::aov(median_wormlength_um_reg_delta ~ strain, data = treatment24hrs_df)
-summary(annova_24hrs)
-
-#run Tukey HSD
-tukey_24hrs <- agricolae::HSD.test(annova_24hrs, trt = "strain")
-tukey_24hrs
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups24 <- merge(tukey_24hrs$means, tukey_24hrs$groups, by = "row.names")
-
-
-#calculate hertiability
-heritability24 <- heritability(treatment24hrs_df, treatment24hrs_df$median_wormlength_um_reg_delta)
-heritability24
-
-#Set order of strains based on sampling latitude 
-treatment24hrs_df$strain <- factor(treatment24hrs_df$strain)
-
-#set height for tukey labels
-plot_tukey_groups24$text_plot_height <- 110
-
-#create heritability text dataframe
-heritability24_rounded <- round(heritability24, digits = 2)
-heritability24_plot_df <- data.frame(
-  x = 1,
-  y = 165,
-  label = I(list(bquote(italic(H)^2 == .(heritability24_rounded))))  # Needs to be a character for now
-)
+  dplyr::filter(Treatment == "treatment")
 
 
 #Box plot
-treatment24_delta_plot <- ggplot(treatment24hrs_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
-  geom_boxplot(outlier.shape = NA) +
+treatment24_delta_plot <- ggplot(treatment24hrs_df, aes(x = Strain, y = median_wormlength_um_delta)) + 
+  ggplot2::geom_boxplot(outlier.shape = NA) +
   #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
-  xlab("Strain") + 
-  ylab("Normalized Animal\nLength (µm)") +
-  theme_classic() + 
-  geom_text(data=plot_tukey_groups24, 
-            aes(x= Row.names, y = text_plot_height, label = groups), 
-            size = 3.5, 
-            color = "blue") + 
-  geom_text(data = heritability24_plot_df, 
-            aes(x = x, y = y, label = label), 
-            parse = TRUE, 
-            size = 3.5)  + 
-  coord_cartesian(clip = "off") + 
-  theme(
+  ggplot2::geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
+  ggplot2::xlab("Strain") + 
+  ggplot2::ylab("Treatment - Control\nAnimal Length (µm)") +
+  ggplot2::theme_classic() + 
+  ggplot2::coord_cartesian(clip = "off") + 
+  ggplot2::theme(
     axis.title.y = element_text(size = 10), 
     axis.title.x = element_text(size = 10), 
     axis.text.x = element_text(size = 8)
-  )
+  )+
+  ggplot2::scale_y_continuous(expand = expansion(mult = c(0.05, 0.1)))
   
 treatment24_delta_plot
 
 ```
 
 
-Proportional differences
-NOTE: proportional differences are comparable to delta, so we chose to only include delta plots in the manuscript.
+Rxn norm for length
 ```{r}
-#Calculate proportional effect of cold treatment
-cold24hrs_delta_df <- proportional_effect(cold24hrs_delta_df)
+#create strain mean dataframe
+rxn_df_24hrs <- cold24hrs_delta_df %>% 
+  dplyr::select(Treatment, Strain, median_wormlength_um) %>%
+  dplyr::group_by(Strain, Treatment) %>% 
+    dplyr::summarise(
+      wormlength_strain_mean = mean(median_wormlength_um, na.rm = TRUE)) %>% 
+  dplyr::mutate(contidition_numeric = case_when(
+    Treatment == "control" ~ 1, 
+    Treatment == "treatment" ~ 2
+  ))
 
-#Make treatementdataframe
-treatment24hrs_df <- cold24hrs_delta_df %>%
-  dplyr::filter(notes == "treatment")
+#Create heritabiliity dataframes so that heritability can be added to plots
+H2_strain_24hrs_plot_df <- data.frame(
+  x = 1.5,
+  y = max(rxn_df_24hrs$wormlength_strain_mean) + 40,
+  label = I(list(bquote(italic({H^2}[strain]) == .(round(H2_strain_24hrs, digits = 2))))))
 
-#run annova
-annova_24hrs_proportion <- stats::aov(proportional_diff ~ strain + replicate, data = treatment24hrs_df)
-summary(annova_24hrs_proportion)
-
-#run Tukey HSD
-tukey_24hrs_proportion <- agricolae::HSD.test(annova_24hrs_proportion, trt = "strain")
-tukey_24hrs_proportion
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups24_proportion <- merge(tukey_24hrs_proportion$means, tukey_24hrs_proportion$groups, by = "row.names")
-
-
-#Set order of strains based on sampling latitude 
-treatment24hrs_df$strain <- factor(treatment24hrs_df$strain)
-
-#set height for tukey labels
-plot_tukey_groups24_proportion$text_plot_height <- 1.2
+H2_strain_treatment_24hrs_plot_df <- data.frame(
+  x = 1.5,
+  y = max(rxn_df_24hrs$wormlength_strain_mean) + 20,
+  label = I(list(bquote(italic({H^2}[strain~":"~treatment]) == .(round(H2_strain_treatment_24hrs, digits = 2))))))
 
 
-#Make box plot
-treatment24_delta_plot_proportion <- ggplot(treatment24hrs_df, aes(x = strain, y = proportional_diff)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
-  xlab("Strain") + 
-  ylab("Proportional difference") +
-  theme_classic() + 
-  geom_text(data=plot_tukey_groups24_proportion, 
-            aes(x= Row.names, y = text_plot_height, label = groups), 
-            size = 3.5, 
-            color = "blue") + 
-  coord_cartesian(clip = "off") + 
-  theme(
+#make rxn norm plot
+rxn_plot_24hrs <- ggplot(rxn_df_24hrs, aes(x = contidition_numeric, y=wormlength_strain_mean)) + 
+  ggplot2::geom_line(aes(group=Strain)) + 
+  ggplot2::geom_point() + 
+  ggplot2::scale_x_continuous(breaks = c(1,2), 
+                     limits = c(1,2), 
+                     labels = c("20°C", "4°C")) + 
+  ggplot2::geom_text(data = H2_strain_24hrs_plot_df, 
+            aes(x = x, y = y, label = label), 
+            parse = TRUE, 
+            size = 3.5)  + 
+  ggplot2::geom_text(data = H2_strain_treatment_24hrs_plot_df, 
+            aes(x = x, y = y, label = label), 
+            parse = TRUE, 
+            size = 3.5)  + 
+  ggplot2::xlab("L1 Larval Stage Temperature") + 
+  ggplot2::ylab("Mean Animal Length (µm)") +
+  ggplot2::theme_classic() + 
+  ggplot2::theme(
     axis.title.y = element_text(size = 10), 
     axis.title.x = element_text(size = 10), 
     axis.text.x = element_text(size = 8)
   )
-treatment24_delta_plot_proportion
+
+rxn_plot_24hrs
+```
 
 
-#make comparison plot with delta
-ggarrange(treatment24_delta_plot_proportion, treatment24_delta_plot, ncol = 1)
+Proportional differences
+NOTE: proportional differences are comparable to delta, so we chose to only include delta plots in the manuscript.
+```{r}
+##Calculate proportional effect of cold treatment
+#cold24hrs_delta_df <- proportional_effect(cold24hrs_delta_df)
+#
+##Make treatementdataframe
+#treatment24hrs_df <- cold24hrs_delta_df %>%
+#  dplyr::filter(notes == "treatment")
+#
+##run annova
+#annova_24hrs_proportion <- stats::aov(proportional_diff ~ strain + replicate, data = treatment24hrs_df)
+#summary(annova_24hrs_proportion)
+#
+##run Tukey HSD
+#tukey_24hrs_proportion <- agricolae::HSD.test(annova_24hrs_proportion, trt = "strain")
+#tukey_24hrs_proportion
+#
+##Make dataframe for tukey groupings for the plot 
+#plot_tukey_groups24_proportion <- merge(tukey_24hrs_proportion$means, tukey_24hrs_proportion$groups, by = "row.names")
+#
+#
+##Set order of strains based on sampling latitude 
+#treatment24hrs_df$strain <- factor(treatment24hrs_df$strain)
+#
+##set height for tukey labels
+#plot_tukey_groups24_proportion$text_plot_height <- 1.2
+#
+#
+##Make box plot
+#treatment24_delta_plot_proportion <- ggplot(treatment24hrs_df, aes(x = strain, y = proportional_diff)) + 
+#  geom_boxplot(outlier.shape = NA) +
+#  #geom_violin() +
+#  geom_jitter(shape=16, position=position_jitter(0.2), size = 1, alpha = 0.5) + 
+#  xlab("Strain") + 
+#  ylab("Proportional difference") +
+#  theme_classic() + 
+#  geom_text(data=plot_tukey_groups24_proportion, 
+#            aes(x= Row.names, y = text_plot_height, label = groups), 
+#            size = 3.5, 
+#            color = "blue") + 
+#  coord_cartesian(clip = "off") + 
+#  theme(
+#    axis.title.y = element_text(size = 10), 
+#    axis.title.x = element_text(size = 10), 
+#    axis.text.x = element_text(size = 8)
+#  )
+#treatment24_delta_plot_proportion
+#
+#
+##make comparison plot with delta
+#ggarrange(treatment24_delta_plot_proportion, treatment24_delta_plot, ncol = 1)
 ```
 
 
 Add scatter plot of control vs delta
 ```{r}
-#Make correlation test dataframes
-cor_24hrs_df <- merge(rank_control_24hrs, rank_delta_24hrs, by = "strain")
-
-#spearman correlation
-spearman24hrs <- cor.test(cor_24hrs_df$control_mean, cor_24hrs_df$delta_mean, method = "spearman")
-
-#scatterplot
-control24_plot <-ggplot(cor_24hrs_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  xlab("Mean Normalized Animal Length (µm)") + 
-  ylab("Control Mean\nAnimal Length (µm)") + 
-  ggpubr::stat_cor(method = "pearson", 
-           label.x = min(cor_24hrs_df$delta_mean), 
-           label.y = min(cor_24hrs_df$control_mean)) +
-  theme_classic() + 
-  theme(
-    axis.title.y = element_text(size = 10), 
-    axis.title.x = element_text(size = 10)
-  ) + 
-  geom_smooth(method = "lm", se = FALSE)
-
-control24_plot
+##Make correlation test dataframes
+#cor_24hrs_df <- merge(rank_control_24hrs, rank_delta_24hrs, by = "Strain")
+#
+##spearman correlation
+#spearman24hrs <- cor.test(cor_24hrs_df$control_mean, cor_24hrs_df$delta_mean, method = "spearman")
+#
+##scatterplot
+#control24_plot <-ggplot(cor_24hrs_df, aes(x = delta_mean, y = control_mean)) + 
+#  geom_point() + 
+#  xlab("Difference in treatment animal length (µm)") + 
+#  ylab("Control animal length (µm)") + 
+#  ggpubr::stat_cor(method = "pearson", 
+#           label.x = min(cor_24hrs_df$delta_mean), 
+#           label.y = min(cor_24hrs_df$control_mean)) +
+#  theme_classic() + 
+#  theme(
+#    axis.title.y = element_text(size = 10), 
+#    axis.title.x = element_text(size = 10)
+#  ) + 
+#  geom_smooth(method = "lm", se = FALSE)
+#
+#control24_plot
 ```
 
 merge 24 hour plots together to make panel
 ```{r}
 Fig1_panelB <- cowplot::plot_grid(treatment24_delta_plot,
-                                       control24_plot, rel_widths = c(3, 2))
+                                       rxn_plot_24hrs, rel_widths = c(3, 2))
 
 Fig1_panelB <- ggdraw(Fig1_panelB) + draw_label("24-hour cold treatment", 
                                                 fontface = 'bold', 
@@ -542,105 +680,105 @@ Figure 1C: 1 week cold treatment box plot
 
 Treatment delta box plot
 ```{r}
-#Make dataframe
-treatment1wk_df <- cold1week_delta_df %>%
-  dplyr::filter(notes == "treatment")
-
-#run annova
-annova_1wk <- stats::aov(median_wormlength_um_reg_delta ~ strain, data = treatment1wk_df)
-summary(annova_1wk)
-
-#run Tukey HSD
-tukey_1wk <- agricolae::HSD.test(annova_1wk, trt = "strain")
-tukey_1wk
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups1wk <- merge(tukey_1wk$means, tukey_1wk$groups, by = "row.names")
-
-
-#calculate hertiability
-heritability1wk <- heritability(treatment1wk_df, treatment1wk_df$median_wormlength_um_reg_delta)
-
-#Set order of strains based on sampling latitude 
-treatment1wk_df$strain <- factor(treatment1wk_df$strain)
-
-#set height for tukey labels
-plot_tukey_groups1wk$text_plot_height <- -190
-
-#create heritability text dataframe
-heritability1wk_rounded <- round(heritability1wk, digits = 2)
-heritability1wk_plot_df <- data.frame(
-  x = 1,
-  y = -160,
-  label = I(list(bquote(H^2 == .(heritability1wk_rounded))))  # Needs to be a character for now
-)
-
-
-#Box plot
-treatment1wk_delta_plot <- ggplot(treatment1wk_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2)) + 
-  xlab("Strain") + 
-  ylab("Normalized Animal\nLength (µm)") +
-  theme_classic() + 
-  geom_text(data=plot_tukey_groups1wk, 
-            aes(x= Row.names, y = text_plot_height, label = groups), 
-            size = 3.5,
-            color = "blue") + 
-  geom_text(data = heritability1wk_plot_df, 
-            aes(x = x, y = y, label = label), 
-            parse = TRUE, 
-            size = 3.5)  + 
-  coord_cartesian(clip = "off") + 
-  theme(
-    axis.title.y = element_text(size = 10), 
-    axis.title.x = element_text(size = 10), 
-    axis.text.x = element_text(size = 8)
-  )
-  
-treatment1wk_delta_plot
+##Make dataframe
+#treatment1wk_df <- cold1week_delta_df %>%
+#  dplyr::filter(notes == "treatment")
+#
+##run annova
+#annova_1wk <- stats::aov(median_wormlength_um_reg_delta ~ strain, data = treatment1wk_df)
+#summary(annova_1wk)
+#
+##run Tukey HSD
+#tukey_1wk <- agricolae::HSD.test(annova_1wk, trt = "strain")
+#tukey_1wk
+#
+##Make dataframe for tukey groupings for the plot 
+#plot_tukey_groups1wk <- merge(tukey_1wk$means, tukey_1wk$groups, by = "row.names")
+#
+#
+##calculate hertiability
+#heritability1wk <- heritability(treatment1wk_df, treatment1wk_df$median_wormlength_um_reg_delta)
+#
+##Set order of strains based on sampling latitude 
+#treatment1wk_df$strain <- factor(treatment1wk_df$strain)
+#
+##set height for tukey labels
+#plot_tukey_groups1wk$text_plot_height <- -190
+#
+##create heritability text dataframe
+#heritability1wk_rounded <- round(heritability1wk, digits = 2)
+#heritability1wk_plot_df <- data.frame(
+#  x = 1,
+#  y = -160,
+#  label = I(list(bquote(H^2 == .(heritability1wk_rounded))))  # Needs to be a character for now
+#)
+#
+#
+##Box plot
+#treatment1wk_delta_plot <- ggplot(treatment1wk_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
+#  geom_boxplot(outlier.shape = NA) +
+#  #geom_violin() +
+#  geom_jitter(shape=16, position=position_jitter(0.2)) + 
+#  xlab("Strain") + 
+#  ylab("Normalized animal\nlength (µm)") +
+#  theme_classic() + 
+#  geom_text(data=plot_tukey_groups1wk, 
+#            aes(x= Row.names, y = text_plot_height, label = groups), 
+#            size = 3.5,
+#            color = "blue") + 
+#  geom_text(data = heritability1wk_plot_df, 
+#            aes(x = x, y = y, label = label), 
+#            parse = TRUE, 
+#            size = 3.5)  + 
+#  coord_cartesian(clip = "off") + 
+#  theme(
+#    axis.title.y = element_text(size = 10), 
+#    axis.title.x = element_text(size = 10), 
+#    axis.text.x = element_text(size = 8)
+#  )
+#  
+#treatment1wk_delta_plot
 ```
 
 
 Add scatter plot of control vs delta
 ```{r}
-#Make correlation test dataframes
-cor_1wk_df <- merge(rank_control_1wk, rank_delta_1wk, by = "strain")
-
-#spearman correlation
-spearman1wk <- cor.test(cor_1wk_df$control_mean, cor_1wk_df$delta_mean, method = "spearman")
-
-#scatterplot
-control1wk_plot <-ggplot(cor_1wk_df, aes(x = delta_mean, y = control_mean)) + 
-  geom_point() + 
-  xlab("Mean Normalized Animal Length (µm)") + 
-  ylab("Control Mean\nAnimal Length (µm)") + 
-  ggpubr::stat_cor(method = "pearson", 
-           label.x = min(cor_1wk_df$delta_mean), 
-           label.y = min(cor_1wk_df$control_mean)) +
-  theme_classic() + 
-  theme(
-    axis.title.y = element_text(size = 10), 
-    axis.title.x = element_text(size = 10)
-  )
-
-control1wk_plot
+##Make correlation test dataframes
+#cor_1wk_df <- merge(rank_control_1wk, rank_delta_1wk, by = "strain")
+#
+##spearman correlation
+#spearman1wk <- cor.test(cor_1wk_df$control_mean, cor_1wk_df$delta_mean, method = "spearman")
+#
+##scatterplot
+#control1wk_plot <-ggplot(cor_1wk_df, aes(x = delta_mean, y = control_mean)) + 
+#  geom_point() + 
+#  xlab("Mean normalized animal length (µm)") + 
+#  ylab("Control mean\nanimal length (µm)") + 
+#  ggpubr::stat_cor(method = "pearson", 
+#           label.x = min(cor_1wk_df$delta_mean), 
+#           label.y = min(cor_1wk_df$control_mean)) +
+#  theme_classic() + 
+#  theme(
+#    axis.title.y = element_text(size = 10), 
+#    axis.title.x = element_text(size = 10)
+#  )
+#
+#control1wk_plot
 ```
 
 
 merge 1 week treatment plots together to make panel
 ```{r}
-Fig1_panelC <- cowplot::plot_grid(treatment1wk_delta_plot,
-                                       control1wk_plot, rel_widths = c(3, 2))
-
-Fig1_panelC <- ggdraw(Fig1_panelC) + draw_label("1 week cold treatment", 
-                                                fontface = 'bold', 
-                                                x = 0.5, 
-                                                y = 0.95,
-                                                size = 12)
-
-Fig1_panelC
+#Fig1_panelC <- cowplot::plot_grid(treatment1wk_delta_plot,
+#                                       control1wk_plot, rel_widths = c(3, 2))
+#
+#Fig1_panelC <- ggdraw(Fig1_panelC) + draw_label("1 week cold treatment", 
+#                                                fontface = 'bold', 
+#                                                x = 0.5, 
+#                                                y = 0.95,
+#                                                size = 12)
+#
+#Fig1_panelC
 ```
 
 
@@ -652,7 +790,8 @@ NOTE: did not include 1 week cold treatment in manuscript because the treatment 
 Figure1 <- ggpubr::ggarrange(Fig1_panelA , 
                      Fig1_panelB, 
                      ncol = 1, 
-                     labels = c("A", "B"))
+                     labels = c("A", "B"),
+                     font.label = list(size = 12, color = "black", face = "bold"))
 Figure1
 
 #Export based on micropub guidelines: .jpg 500 DPI with 4:3 aspect ratio 
