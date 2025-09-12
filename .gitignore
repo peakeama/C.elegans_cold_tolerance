@@ -17,7 +17,7 @@ TotransfertoAmandaP*/
 *.csv
 *.jpeg
 *.svg
-*./.png
+*./*.png
 *.xlsx
 *.docx
 *.html
