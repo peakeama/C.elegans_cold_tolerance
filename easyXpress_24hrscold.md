@@ -5,6 +5,51 @@ Amanda Peake
 
 # R version and packages needed
 
+``` r
+#easyXpress
+#devtools::install_github("AndersenLab/easyXpress")
+library(easyXpress)
+library(tidyverse)
+```
+
+    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+    ## ✔ dplyr     1.1.4     ✔ readr     2.1.5
+    ## ✔ forcats   1.0.0     ✔ stringr   1.5.1
+    ## ✔ ggplot2   3.5.2     ✔ tibble    3.2.1
+    ## ✔ lubridate 1.9.3     ✔ tidyr     1.3.1
+    ## ✔ purrr     1.0.2     
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
+    ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+
+``` r
+library(ggplot2)
+library(agricolae)
+library(lme4)
+```
+
+    ## Loading required package: Matrix
+    ## 
+    ## Attaching package: 'Matrix'
+    ## 
+    ## The following objects are masked from 'package:tidyr':
+    ## 
+    ##     expand, pack, unpack
+
+``` r
+library(dplyr)
+library(caret)
+```
+
+    ## Loading required package: lattice
+    ## 
+    ## Attaching package: 'caret'
+    ## 
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     lift
+
 ## Load data
 
 ``` r
@@ -412,7 +457,7 @@ ce1
 
 Calculate difference between control and treatment. delta() calculates
 the difference in well summary statistics between the experimental
-condition and the median control condition within a group.
+condition and the mean control condition within a group.
 
 ``` r
 #Calculate difference between control wells and treatment
@@ -464,3 +509,68 @@ finalized_delta_df <- del %>%
 #write del to csv to be used in manuscript visualisation script
 write.csv(finalized_delta_df, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/24hours_manuscript_df.csv", row.names = FALSE)
 ```
+
+## Information about R session
+
+``` r
+sessionInfo()
+```
+
+    ## R version 4.4.0 (2024-04-24 ucrt)
+    ## Platform: x86_64-w64-mingw32/x64
+    ## Running under: Windows 11 x64 (build 26100)
+    ## 
+    ## Matrix products: default
+    ## 
+    ## 
+    ## locale:
+    ## [1] LC_COLLATE=English_Canada.utf8  LC_CTYPE=English_Canada.utf8   
+    ## [3] LC_MONETARY=English_Canada.utf8 LC_NUMERIC=C                   
+    ## [5] LC_TIME=English_Canada.utf8    
+    ## 
+    ## time zone: America/Toronto
+    ## tzcode source: internal
+    ## 
+    ## attached base packages:
+    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
+    ## 
+    ## other attached packages:
+    ##  [1] caret_7.0-1      lattice_0.22-6   lme4_1.1-37      Matrix_1.7-0    
+    ##  [5] agricolae_1.3-7  lubridate_1.9.3  forcats_1.0.0    stringr_1.5.1   
+    ##  [9] dplyr_1.1.4      purrr_1.0.2      readr_2.1.5      tidyr_1.3.1     
+    ## [13] tibble_3.2.1     ggplot2_3.5.2    tidyverse_2.0.0  easyXpress_2.0.0
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] Rdpack_2.6.2          pROC_1.18.5           gridExtra_2.3        
+    ##  [4] rlang_1.1.3           magrittr_2.0.3        rebus.base_0.0-3     
+    ##  [7] compiler_4.4.0        png_0.1-8             vctrs_0.6.5          
+    ## [10] maps_3.4.2            reshape2_1.4.4        crayon_1.5.3         
+    ## [13] pkgconfig_2.0.3       fastmap_1.2.0         labeling_0.4.3       
+    ## [16] utf8_1.2.4            rebus_0.1-3           rmarkdown_2.27       
+    ## [19] prodlim_2024.06.25    tzdb_0.4.0            nloptr_2.0.3         
+    ## [22] bit_4.5.0             xfun_0.44             pals_1.9             
+    ## [25] recipes_1.3.0         highr_0.11            jpeg_0.1-10          
+    ## [28] tiff_0.1-12           parallel_4.4.0        cluster_2.1.6        
+    ## [31] R6_2.5.1              stringi_1.8.4         parallelly_1.43.0    
+    ## [34] boot_1.3-30           rpart_4.1.23          Rcpp_1.0.12          
+    ## [37] iterators_1.0.14      knitr_1.47            future.apply_1.11.3  
+    ## [40] splines_4.4.0         nnet_7.3-19           igraph_2.1.1         
+    ## [43] timechange_0.3.0      tidyselect_1.2.1      rstudioapi_0.16.0    
+    ## [46] dichromat_2.0-0.1     yaml_2.3.8            AlgDesign_1.2.1.1    
+    ## [49] timeDate_4041.110     codetools_0.2-20      listenv_0.9.1        
+    ## [52] rebus.datetimes_0.0-2 plyr_1.8.9            withr_3.0.2          
+    ## [55] evaluate_0.23         future_1.40.0         survival_3.5-8       
+    ## [58] rebus.numbers_0.0-1   pillar_1.9.0          foreach_1.5.2        
+    ## [61] stats4_4.4.0          reformulas_0.4.0      generics_0.1.3       
+    ## [64] vroom_1.6.5           hms_1.1.3             munsell_0.5.1        
+    ## [67] scales_1.3.0          minqa_1.2.7           globals_0.17.0       
+    ## [70] class_7.3-22          glue_1.7.0            mapproj_1.2.11       
+    ## [73] tools_4.4.0           data.table_1.16.0     ModelMetrics_1.2.2.2 
+    ## [76] gower_1.0.2           bmp_0.3               cowplot_1.1.3        
+    ## [79] grid_4.4.0            rbibutils_2.3         ipred_0.9-15         
+    ## [82] readbitmap_0.1.5      colorspace_2.1-0      nlme_3.1-164         
+    ## [85] rebus.unicode_0.0-2   cli_3.6.2             fansi_1.0.6          
+    ## [88] lava_1.8.1            gtable_0.3.5          imager_1.0.2         
+    ## [91] digest_0.6.35         farver_2.1.2          htmltools_0.5.8.1    
+    ## [94] lifecycle_1.0.4       hardhat_1.4.1         bit64_4.5.2          
+    ## [97] MASS_7.3-60.2

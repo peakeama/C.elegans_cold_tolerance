@@ -6,30 +6,12 @@ Amanda Peake
 # R version and packages needed
 
 ``` r
-R.Version()$version.string
-```
-
-    ## [1] "R version 4.4.0 (2024-04-24 ucrt)"
-
-``` r
 #easyXpress
 #devtools::install_github("AndersenLab/easyXpress")
 
 library(easyXpress)
 library(tidyverse)
 ```
-
-    ## Warning: package 'tidyverse' was built under R version 4.4.1
-
-    ## Warning: package 'ggplot2' was built under R version 4.4.3
-
-    ## Warning: package 'readr' was built under R version 4.4.1
-
-    ## Warning: package 'stringr' was built under R version 4.4.3
-
-    ## Warning: package 'forcats' was built under R version 4.4.1
-
-    ## Warning: package 'lubridate' was built under R version 4.4.1
 
     ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
     ## ✔ dplyr     1.1.4     ✔ readr     2.1.5
@@ -60,8 +42,6 @@ library(lme4)
 library(dplyr)
 library(caret)
 ```
-
-    ## Warning: package 'caret' was built under R version 4.4.3
 
     ## Loading required package: lattice
     ## 
@@ -205,12 +185,14 @@ cm <- cf %>%
                                          TRUE ~ NA_character_), 
                 w.lab = paste(Metadata_Plate, strain, sep = "_"))
 
-#Check models 
-# cm.out <- checkModels(data = cm, 
+##Check models 
+#cm.out <- checkModels(data = cm, 
 #                       Metadata_Experiment, Metadata_Plate, 
 #                       proc.img.dir = "i.dir", 
 #                       well.label = "w.lab", 
-#                       out.dir = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/checkModels/out/")
+#                       out.dir = "C:/Users/amand/OneDrive - University of #Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/checkModels/out/")
+#
+#
 ```
 
 Remove objects less than 100um and MDHD
@@ -331,43 +313,23 @@ co2
 View wells to see what data is worth keeping
 
 ``` r
-#set seed to select 8 random flagged well with flags
-set.seed(99)
-
-#set the flags and filter data
-o2 <- easyXpress::setOF(data = o) %>%
-  #randomly sample 8 wells
-  dplyr::filter(well.id %in% sample(well.id, size = 8))
+##set seed to select 8 random flagged well with flags
+#set.seed(99)
+#
+##set the flags and filter data
+#o2 <- easyXpress::setOF(data = o) %>%
+#  #randomly sample 8 wells
+#  dplyr::filter(well.id %in% sample(well.id, size = 8))
+#
+##make overlay
+# vo1 <- easyXpress::viewOverlay(data = o2,
+#                         proc.img.dir = "i.dir",
+#                         well.label = "w.lab",
+#                         obj.label = "model",
+#                         text.anno = "objectFlag",
+#                         # save to example dir
+#                         file = "C:/Users/amand/OneDrive - University of #Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/viewOverlay/overlay.png")
 ```
-
-    ## 4 ObjectFlags detected in data. They were applied in the following order:
-
-    ## edge_ObjectFlag
-
-    ## cluster_ObjectFlag
-
-    ## user_ObjectFlag
-
-    ## outlier_ObjectFlag
-
-    ## The flagged objects are labelled in the objectFlag variable.
-
-``` r
-#make overlay
- vo1 <- easyXpress::viewOverlay(data = o2,
-                         proc.img.dir = "i.dir",
-                         well.label = "w.lab",
-                         obj.label = "model",
-                         text.anno = "objectFlag",
-                         # save to example dir
-                         file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/viewOverlay/overlay.png")
-```
-
-    ## Making grob list for 8 overlays
-
-    ## Making plot for 8 overlays
-
-    ## Saving plot as: C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/ImageXpress_assays/12hrscold/12hrscold/Analysis-20241127/viewOverlay/overlay.png
 
 remove all flagged object from the data
 
@@ -428,8 +390,14 @@ tf <- easyXpress::titerWF(data = raw.wells,
     ## A diagnostic plot for checking cv.n threshold is returned. See ?titerWF() for more details.
 
 ``` r
+tf$p
+```
+
+![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
 #check the number of objects in each well
-n <- easyXpress::nWF(data = tf$d, strain, notes, max = 60, min = 3)
+n <- easyXpress::nWF(data = tf$d, strain, notes, max = 60, min = 5)
 ```
 
     ## The n_WellFlag is set in the output data.
@@ -440,7 +408,7 @@ n <- easyXpress::nWF(data = tf$d, strain, notes, max = 60, min = 3)
 n$p
 ```
 
-![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
 
 ``` r
 #flag wells with extreme outlier values
@@ -479,7 +447,7 @@ cw1 <- easyXpress::checkWF(data = ow, strain, notes)
 cw1$p
 ```
 
-![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
+![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-3.png)<!-- -->
 
 ``` r
 #check flagged outlier wells be plate
@@ -502,7 +470,7 @@ cw2 <- easyXpress::checkWF(data = ow, strain, replicate)
 cw2$p
 ```
 
-![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-3.png)<!-- -->
+![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-12-4.png)<!-- -->
 
 Remove all flagged wells from the data NOTE: removed QX1211 because of
 low embryo yield during filtration.
@@ -568,203 +536,122 @@ ce1
 
 ## Finalize results
 
-Account for differences between replicates
-
-``` r
-#regress the effect of independent plates (eg. blocks) for each strain
-drop$replicate <- as.character(drop$replicate)
-
-reg <- easyXpress::regEff(data = drop,
-                          d.var = median_wormlength_um, #dependent variable
-                          c.var = replicate
-                          )
-```
-
-    ## The dependent variable `median_wormlength_um` is class numeric. Please ensure this is correct.
-
-    ## The confounding variable `replicate` is class character. Please ensure this is correct.
-
-    ## The data are grouped by: ``
-
-``` r
-reg$p2
-```
-
-![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
-
 Calculate difference between control and treatment. delta() calculates
 the difference in well summary statistics between the experimental
-condition and the median control condition within a group.
+condition and the mean control condition within a group.
 
 ``` r
-#Calculate difference
-del <- easyXpress::delta(data = reg$d, 
+#Calculate difference between control wells and treatment
+del <- easyXpress::delta(data = drop, 
                          replicate, strain, 
                          WF = "filter", 
-                        vars = c("median_wormlength_um_reg"),
+                        vars = c("median_wormlength_um"),
                          doseR = FALSE)
+## You set doseR = FALSE. Not expecting controls to be coded for a dose reponse.
+## No flagged wells detected.
+## The data are grouped by, replicate, strain.
+## The mean control value within groups has been subtracted from the well summary statstics:
+## median_wormlength_um
 ```
 
-    ## You set doseR = FALSE. Not expecting controls to be coded for a dose reponse.
-
-    ## No flagged wells detected.
-
-    ## The data are grouped by, replicate, strain.
-
-    ## The mean control value within groups has been subtracted from the well summary statstics:
-
-    ## median_wormlength_um_reg
-
 ``` r
+
+
+#Select columns needed for final dataframe 
+finalized_delta_df <- del %>%
+  dplyr::select(-drug, -concentration_um, -drug_prep_method, -i.dir, -flag_id, -Metadata_Group, -wo_po_area_frac, -assay_type, -food_conc_OD, -food_type, -diluent, -bleach, -well_censor, -well_censor_reason) %>%
+  dplyr::rename("well ID" = well.id, 
+                "Experiment" = Metadata_Experiment, 
+                "Plate" = Metadata_Plate, 
+                "Well" = Metadata_Well, 
+                "Date" = Metadata_Date, 
+                "Magnification" = Metadata_Magnification, 
+                "Image" = FileName_RawBF, 
+                "Strain" = strain, 
+                "Treatment" = notes, 
+                "Plate Design" = replicate, 
+                "Well Strain" = w.lab, 
+                "Mean wormlength (µm)" = mean_wormlength_um, 
+                "Minimum wormlength (µm)" = min_wormlength_um, 
+                "q10 wormlength (µm)" = q10_wormlength_um, 
+                "q25 wormlength (µm)" = q25_wormlength_um, 
+                "Median wormlength (µm)" = median_wormlength_um, 
+                "Standard Deviation wormlength (µm)" = sd_wormlength_um, 
+                "q75 wormlength (µm)" = q75_wormlength_um, 
+                "q90 wormlength (µm)" = q90_wormlength_um, 
+                "Maximum wormlength (µm)" = max_wormlength_um, 
+                "Coefficient of variation wormlength (µm)" = cv_wormlength_um, 
+                "Number of worms" = n, 
+                "Control median wormlength (µm)" = control_median_wormlength_um, 
+                "Delta median wormlength (µm)" = median_wormlength_um_delta
+                )
+
+
 #write del to csv to be used in manuscript visualisation script
-#write.csv(del, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_delta_df.csv", row.names = FALSE)
+write.csv(finalized_delta_df, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_manuscript_df.csv", row.names = FALSE)
 ```
 
-Make a dataframe to compared treatment deltas
+## Information about R session
 
 ``` r
-#Make dataframe
-treatment_df <- subset(del, del$notes == "treatment")
-
-#run an anova to test for differences between strains
-strain_annova <- aov(median_wormlength_um_reg_delta ~ strain, data = treatment_df)
-summary(strain_annova)
+sessionInfo()
 ```
 
-    ##              Df Sum Sq Mean Sq F value Pr(>F)    
-    ## strain        6 141055   23509   31.98 <2e-16 ***
-    ## Residuals   239 175718     735                   
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-``` r
-#Tukey HSD 
-strain_tukey <- HSD.test(strain_annova, trt = "strain")
-strain_tukey
-```
-
-    ## $statistics
-    ##    MSerror  Df      Mean       CV
-    ##   735.2206 239 -98.29991 -27.5839
+    ## R version 4.4.0 (2024-04-24 ucrt)
+    ## Platform: x86_64-w64-mingw32/x64
+    ## Running under: Windows 11 x64 (build 26100)
     ## 
-    ## $parameters
-    ##    test name.t ntr StudentizedRange alpha
-    ##   Tukey strain   7         4.205353  0.05
+    ## Matrix products: default
     ## 
-    ## $means
-    ##         median_wormlength_um_reg_delta      std  r       se       Min
-    ## CB4856                       -84.70284 30.05978 36 4.519158 -148.8300
-    ## CX11314                      -78.15081 23.20555 36 4.519158 -136.1157
-    ## DL238                       -150.94180 28.69266 36 4.519158 -199.1405
-    ## ECA1286                      -90.19707 28.95854 34 4.650176 -158.1236
-    ## JU1200                      -102.71764 23.06381 34 4.650176 -134.8557
-    ## JU394                        -76.49751 24.91077 34 4.650176 -123.1706
-    ## N2                          -103.47574 29.62842 36 4.519158 -167.5298
-    ##                Max        Q25        Q50        Q75
-    ## CB4856   -41.34402 -112.76191  -74.92801  -65.00935
-    ## CX11314  -37.50132  -97.31219  -73.85352  -63.55469
-    ## DL238   -105.89197 -175.65984 -154.41293 -125.39561
-    ## ECA1286  -46.06930 -104.62577  -84.48195  -70.93257
-    ## JU1200   -47.76121 -118.29747 -110.02865  -80.37963
-    ## JU394    -36.69046  -96.30632  -79.57277  -52.02046
-    ## N2       -35.82861 -121.24583 -106.09568  -91.07645
     ## 
-    ## $comparison
-    ## NULL
+    ## locale:
+    ## [1] LC_COLLATE=English_Canada.utf8  LC_CTYPE=English_Canada.utf8   
+    ## [3] LC_MONETARY=English_Canada.utf8 LC_NUMERIC=C                   
+    ## [5] LC_TIME=English_Canada.utf8    
     ## 
-    ## $groups
-    ##         median_wormlength_um_reg_delta groups
-    ## JU394                        -76.49751      a
-    ## CX11314                      -78.15081      a
-    ## CB4856                       -84.70284     ab
-    ## ECA1286                      -90.19707     ab
-    ## JU1200                      -102.71764      b
-    ## N2                          -103.47574      b
-    ## DL238                       -150.94180      c
+    ## time zone: America/Toronto
+    ## tzcode source: internal
     ## 
-    ## attr(,"class")
-    ## [1] "group"
-
-Calculate broad sense heritability
-
-Heritability = 637.93/(637.93 + 735.21) = 0.46
-
-``` r
-#mixed model 
-H_strain_model <- lmer(median_wormlength_um_reg_delta ~ (1|strain), data = treatment_df)
-summary(H_strain_model)
-```
-
-    ## Linear mixed model fit by REML ['lmerMod']
-    ## Formula: median_wormlength_um_reg_delta ~ (1 | strain)
-    ##    Data: treatment_df
+    ## attached base packages:
+    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
-    ## REML criterion at convergence: 2338.5
+    ## other attached packages:
+    ##  [1] caret_7.0-1      lattice_0.22-6   lme4_1.1-37      Matrix_1.7-0    
+    ##  [5] agricolae_1.3-7  lubridate_1.9.3  forcats_1.0.0    stringr_1.5.1   
+    ##  [9] dplyr_1.1.4      purrr_1.0.2      readr_2.1.5      tidyr_1.3.1     
+    ## [13] tibble_3.2.1     ggplot2_3.5.2    tidyverse_2.0.0  easyXpress_2.0.0
     ## 
-    ## Scaled residuals: 
-    ##      Min       1Q   Median       3Q      Max 
-    ## -2.49559 -0.67900  0.04817  0.74278  2.48870 
-    ## 
-    ## Random effects:
-    ##  Groups   Name        Variance Std.Dev.
-    ##  strain   (Intercept) 637.9    25.26   
-    ##  Residual             735.2    27.11   
-    ## Number of obs: 246, groups:  strain, 7
-    ## 
-    ## Fixed effects:
-    ##             Estimate Std. Error t value
-    ## (Intercept)  -98.104      9.702  -10.11
-
-``` r
-vc <- VarCorr(H_strain_model)
-print(vc,comp=c("Variance"))
-```
-
-    ##  Groups   Name        Variance
-    ##  strain   (Intercept) 637.93  
-    ##  Residual             735.21
-
-Make a box plot to compare median deltas
-
-``` r
-#Set order of strains based on sampling latitude 
-treatment_df$strain <- factor(treatment_df$strain, levels = c("ECA1286", "DL238", "CB4856", "CX11314", "JU394", "N2", "JU1200"), ordered = TRUE)
-
-#Make dataframe for tukey groupings for the plot 
-plot_tukey_groups <- merge(strain_tukey$means, strain_tukey$groups, by = "row.names")
-
-
-#Box plot comparing median deltas for each strain
-treatment_delta_plot <- ggplot(treatment_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2), aes(color = replicate)) + 
-  ggtitle("A) 12 hrs at 4°C") + 
-  xlab("strain ordered by latitude") + 
-  ylab("Δ median length per well") +
-  theme_classic() + 
-  theme(plot.title = element_text(size=16, face = "bold")) + 
-  geom_text(data=plot_tukey_groups, aes(x= Row.names, y = Q75, label = groups), size =5, vjust = -1.25, hjust =-1)
-  
-treatment_delta_plot
-```
-
-![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
-
-``` r
-#Box plots not colored by replicate 
-treatment_delta_plot <- ggplot(treatment_df, aes(x = strain, y = median_wormlength_um_reg_delta)) + 
-  geom_boxplot(outlier.shape = NA) +
-  #geom_violin() +
-  geom_jitter(shape=16, position=position_jitter(0.2)) + 
-  ggtitle("A) 12 hrs at 4°C") + 
-  xlab("strain ordered by latitude") + 
-  ylab("Δ median length per well") +
-  theme_classic() + 
-  theme(plot.title = element_text(size=16, face = "bold")) + 
-  geom_text(data=plot_tukey_groups, aes(x= Row.names, y = Q75, label = groups), size =5, vjust = -1.25, hjust =-1.25, color = "blue")
-  
-treatment_delta_plot
-```
-
-![](easyXpress_12hrscold_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->
+    ## loaded via a namespace (and not attached):
+    ##  [1] Rdpack_2.6.2          pROC_1.18.5           gridExtra_2.3        
+    ##  [4] rlang_1.1.3           magrittr_2.0.3        rebus.base_0.0-3     
+    ##  [7] compiler_4.4.0        png_0.1-8             vctrs_0.6.5          
+    ## [10] maps_3.4.2            reshape2_1.4.4        crayon_1.5.3         
+    ## [13] pkgconfig_2.0.3       fastmap_1.2.0         labeling_0.4.3       
+    ## [16] utf8_1.2.4            rebus_0.1-3           rmarkdown_2.27       
+    ## [19] prodlim_2024.06.25    tzdb_0.4.0            nloptr_2.0.3         
+    ## [22] bit_4.5.0             xfun_0.44             pals_1.9             
+    ## [25] recipes_1.3.0         highr_0.11            jpeg_0.1-10          
+    ## [28] tiff_0.1-12           parallel_4.4.0        cluster_2.1.6        
+    ## [31] R6_2.5.1              stringi_1.8.4         parallelly_1.43.0    
+    ## [34] boot_1.3-30           rpart_4.1.23          Rcpp_1.0.12          
+    ## [37] iterators_1.0.14      knitr_1.47            future.apply_1.11.3  
+    ## [40] splines_4.4.0         nnet_7.3-19           igraph_2.1.1         
+    ## [43] timechange_0.3.0      tidyselect_1.2.1      rstudioapi_0.16.0    
+    ## [46] dichromat_2.0-0.1     yaml_2.3.8            AlgDesign_1.2.1.1    
+    ## [49] timeDate_4041.110     codetools_0.2-20      listenv_0.9.1        
+    ## [52] rebus.datetimes_0.0-2 plyr_1.8.9            withr_3.0.2          
+    ## [55] evaluate_0.23         future_1.40.0         survival_3.5-8       
+    ## [58] rebus.numbers_0.0-1   pillar_1.9.0          foreach_1.5.2        
+    ## [61] stats4_4.4.0          reformulas_0.4.0      generics_0.1.3       
+    ## [64] vroom_1.6.5           hms_1.1.3             munsell_0.5.1        
+    ## [67] scales_1.3.0          minqa_1.2.7           globals_0.17.0       
+    ## [70] class_7.3-22          glue_1.7.0            mapproj_1.2.11       
+    ## [73] tools_4.4.0           data.table_1.16.0     ModelMetrics_1.2.2.2 
+    ## [76] gower_1.0.2           bmp_0.3               cowplot_1.1.3        
+    ## [79] grid_4.4.0            rbibutils_2.3         ipred_0.9-15         
+    ## [82] readbitmap_0.1.5      colorspace_2.1-0      nlme_3.1-164         
+    ## [85] rebus.unicode_0.0-2   cli_3.6.2             fansi_1.0.6          
+    ## [88] lava_1.8.1            gtable_0.3.5          imager_1.0.2         
+    ## [91] digest_0.6.35         farver_2.1.2          htmltools_0.5.8.1    
+    ## [94] lifecycle_1.0.4       hardhat_1.4.1         bit64_4.5.2          
+    ## [97] MASS_7.3-60.2
