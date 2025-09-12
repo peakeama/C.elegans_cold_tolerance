@@ -6,9 +6,7 @@ output: github_document
 ---
 
 # R version and packages needed
-```{r}
-R.Version()$version.string
-
+```{r, warning=FALSE}
 #easyXpress
 #devtools::install_github("AndersenLab/easyXpress")
 
@@ -209,7 +207,7 @@ ce1
 
 ## Finalize results
 
-Calculate difference between control and treatment. delta() calculates the difference in well summary statistics between the experimental condition and the median control condition within a group. 
+Calculate difference between control and treatment. delta() calculates the difference in well summary statistics between the experimental condition and the mean control condition within a group. 
 ```{r, collapse=TRUE}
 #Calculate difference between control wells and treatment
 del <- easyXpress::delta(data = drop, 
@@ -252,5 +250,11 @@ finalized_delta_df <- del %>%
 #write del to csv to be used in manuscript visualisation script
 write.csv(finalized_delta_df, file = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/12hours_manuscript_df.csv", row.names = FALSE)
 
+```
+
+
+## Information about R session
+```{r}
+sessionInfo()
 ```
 

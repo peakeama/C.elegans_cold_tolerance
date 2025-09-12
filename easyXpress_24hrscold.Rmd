@@ -2,15 +2,13 @@
 title: "easyXpress 24 hours cold trial"
 author: "Amanda Peake"
 date: "2024-12-17"
-output: html_document
+output: github_document
 editor_options: 
   chunk_output_type: console
 ---
 
 # R version and packages needed
-```{r, include=FALSE}
-R.Version()$version.string
-
+```{r, warning=FALSE}
 #easyXpress
 #devtools::install_github("AndersenLab/easyXpress")
 library(easyXpress)
@@ -51,7 +49,7 @@ cf <- clusterOF(data = ef)
 ```
 
 Check proportion of flags in each plate
-```{r, collapse=TRUE}
+```{r, collapse=TRUE, fig.show="asis"}
 #Check flags
 c1 <- checkOF(data = cf, strain, notes)
 c1$p
@@ -211,7 +209,7 @@ ce1
 
 ## Finalize results
 
-Calculate difference between control and treatment. delta() calculates the difference in well summary statistics between the experimental condition and the median control condition within a group. 
+Calculate difference between control and treatment. delta() calculates the difference in well summary statistics between the experimental condition and the mean control condition within a group. 
 ```{r, collapse=TRUE}
 #Calculate difference between control wells and treatment
 del <- easyXpress::delta(data = drop, 
@@ -256,3 +254,7 @@ write.csv(finalized_delta_df, file = "C:/Users/amand/OneDrive - University of To
 
 ```
 
+## Information about R session
+```{r}
+sessionInfo()
+```

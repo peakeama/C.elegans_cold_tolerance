@@ -2,15 +2,13 @@
 title: "Cold tolerance micropub analysis and visulaizations"
 author: "Amanda Peake"
 date: "2025-07-25"
-output: html_document
+output: github_document
 editor_options: 
   chunk_output_type: console
 ---
 
 ## R version and packages needed
-```{r, include=FALSE}
-R.Version()$version.string
-
+```{r, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(agricolae)
@@ -22,7 +20,7 @@ library(gridExtra)
 library(cowplot)
 
 ```
-Note: checked that all warning msgs for "package <...> was built under R version <...>" are backwards compatible with current R version (4.4.0) according to packageDescription(). 
+Note: I checked that all warning msgs for "package <...> was built under R version <...>" are backwards compatible with current R version (4.4.0) according to packageDescription(). 
 
 
 ## Import data
@@ -438,3 +436,8 @@ ggsave(filename = "C:/Users/amand/OneDrive - University of Toronto/Documents/Aca
 
 ```
 
+
+## Information about R session
+```{r}
+sessionInfo()
+```
