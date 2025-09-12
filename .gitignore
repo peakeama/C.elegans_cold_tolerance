@@ -20,6 +20,7 @@ TotransfertoAmandaP*/
 *./.png
 *.xlsx
 *.docx
+*.html
 
 #files not relevant to study
 20241014_freezeDataGaotian (1).R
