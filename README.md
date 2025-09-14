@@ -1,7 +1,7 @@
 # Cold tolerance in *Caenorhabditis elegans*
 
 ## Overview
-Rmarkdown scripts and rendered output (.md files) for data anlaysis and visualisation of cold tolerance in seven *C. elegans* strains. 
+Rmarkdown scripts and rendered output for data anlaysis and visualisation of cold tolerance in seven *C. elegans* strains. 
 
 ## Scripts 
 - **easyXpress_12hrscold.Rmd**: easyXpress script used to process image data to get animal lengths for 12-hour cold treatment assay. 
