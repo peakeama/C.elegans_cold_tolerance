@@ -18,6 +18,7 @@ library(dplyr)
 library(ggpubr)
 library(gridExtra)
 library(cowplot)
+library(car)
 
 ```
 Note: I checked that all warning msgs for "package <...> was built under R version <...>" are backwards compatible with current R version (4.4.0) according to packageDescription(). 
@@ -141,6 +142,23 @@ cor.test(cor_24hrs_df$control_mean, cor_24hrs_df$delta_mean, method = "pearson")
 ```
 
 
+Get sample sizes for each strain and treatment
+```{r}
+#get sample sizes for 12hrs dataset
+cold12hrs_sample_sizes <- cold12hrs_delta_df %>% 
+  dplyr::group_by(Strain, Treatment) %>% 
+  dplyr::summarise(number_animals = sum(n, na.rm = TRUE), 
+            number_wells = n())
+
+#get sample sizes for 24hrs dataset
+cold24hrs_sample_sizes <- cold24hrs_delta_df %>% 
+  dplyr::group_by(Strain, Treatment) %>% 
+  dplyr::summarise(number_animals = sum(n, na.rm = TRUE), 
+            number_wells = n())
+```
+
+
+
 ## 12 hour cold treatment
 
 Linear model to check for differences in length between treatment groups and strains
@@ -177,6 +195,26 @@ H2_strain_12hrs
 
 H2_strain_treatment_12hrs <- strain_treatment_variance_12hrs/(strain_variance_12hrs + residual_variance_12hrs + strain_treatment_variance_12hrs)
 H2_strain_treatment_12hrs
+
+
+```
+
+
+Look for differences in variance between control and treatment 
+```{r}
+#Histograms to look at normality of data
+ggplot(cold12hrs_delta_df, aes(x = median_wormlength_um)) + 
+  geom_histogram() + 
+  facet_wrap(~ Treatment) + 
+  theme_classic()
+
+#Run Shapiro-Wilk test to check for normality
+normality_12hrs <- tapply(cold12hrs_delta_df$median_wormlength_um, cold12hrs_delta_df$Treatment, shapiro.test)
+print(normality_12hrs)
+
+#Use Levene's Test to check for differences in variance since data violates assumption of normality
+cold12hrs_var_test <- car::leveneTest(median_wormlength_um ~ Treatment, cold12hrs_delta_df, center = median)
+cold12hrs_var_test
 ```
 
 
@@ -321,6 +359,24 @@ H2_strain_treatment_24hrs <- strain_treatment_variance_24hrs/(strain_variance_24
 H2_strain_treatment_24hrs
 ```
 
+
+Look for differences in variance between control and treatment 
+```{r}
+#Histograms to look at normality of data
+ggplot(cold24hrs_delta_df, aes(x = median_wormlength_um)) + 
+  geom_histogram() + 
+  facet_wrap(~ Treatment) + 
+  theme_classic()
+
+#Run Shapiro-Wilk test to check for normality
+normality_24hrs <- tapply(cold24hrs_delta_df$median_wormlength_um, cold24hrs_delta_df$Treatment, shapiro.test)
+print(normality_24hrs)
+
+#Use Levene's Test to check for differences in variance since data violates assumption of normallity
+cold24hrs_var_test <- car::leveneTest(median_wormlength_um ~ Treatment, cold24hrs_delta_df, center = median)
+cold24hrs_var_test
+
+```
 
 
 Delta box plots
