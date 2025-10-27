@@ -77,6 +77,22 @@ library(cowplot)
     ## 
     ##     stamp
 
+``` r
+library(car)
+```
+
+    ## Loading required package: carData
+    ## 
+    ## Attaching package: 'car'
+    ## 
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     recode
+    ## 
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     some
+
 Note: I checked that all warning msgs for “package \<…\> was built under
 R version \<…\>” are backwards compatible with current R version (4.4.0)
 according to packageDescription().
@@ -297,6 +313,76 @@ cor.test(cor_24hrs_df$control_mean, cor_24hrs_df$delta_mean, method = "pearson")
     ##        cor 
     ## -0.6915268
 
+Get sample sizes for each strain and treatment
+
+``` r
+#get sample sizes for 12hrs dataset
+cold12hrs_sample_sizes <- cold12hrs_delta_df %>% 
+  dplyr::group_by(Strain, Treatment) %>% 
+  dplyr::summarise(number_animals = sum(n, na.rm = TRUE), 
+            number_wells = n())
+```
+
+    ## `summarise()` has grouped output by 'Strain'. You can override using the
+    ## `.groups` argument.
+
+``` r
+cold12hrs_sample_sizes
+```
+
+    ## # A tibble: 14 × 4
+    ## # Groups:   Strain [7]
+    ##    Strain  Treatment number_animals number_wells
+    ##    <chr>   <chr>              <int>        <int>
+    ##  1 CB4856  control             1335           31
+    ##  2 CB4856  treatment           1557           36
+    ##  3 CX11314 control              503           35
+    ##  4 CX11314 treatment            615           36
+    ##  5 DL238   control              866           33
+    ##  6 DL238   treatment           1080           36
+    ##  7 ECA1286 control              491           35
+    ##  8 ECA1286 treatment            527           34
+    ##  9 JU1200  control             1017           35
+    ## 10 JU1200  treatment            968           34
+    ## 11 JU394   control             1185           35
+    ## 12 JU394   treatment           1134           34
+    ## 13 N2      control              852           35
+    ## 14 N2      treatment            905           36
+
+``` r
+#get sample sizes for 24hrs dataset
+cold24hrs_sample_sizes <- cold24hrs_delta_df %>% 
+  dplyr::group_by(Strain, Treatment) %>% 
+  dplyr::summarise(number_animals = sum(n, na.rm = TRUE), 
+            number_wells = n())
+```
+
+    ## `summarise()` has grouped output by 'Strain'. You can override using the
+    ## `.groups` argument.
+
+``` r
+cold24hrs_sample_sizes
+```
+
+    ## # A tibble: 14 × 4
+    ## # Groups:   Strain [7]
+    ##    Strain  Treatment number_animals number_wells
+    ##    <chr>   <chr>              <int>        <int>
+    ##  1 CB4856  control             1287           30
+    ##  2 CB4856  treatment           1528           33
+    ##  3 CX11314 control              506           35
+    ##  4 CX11314 treatment            491           34
+    ##  5 DL238   control             1062           36
+    ##  6 DL238   treatment            952           36
+    ##  7 ECA1286 control              476           34
+    ##  8 ECA1286 treatment            394           31
+    ##  9 JU1200  control              895           33
+    ## 10 JU1200  treatment           1012           34
+    ## 11 JU394   control             1206           33
+    ## 12 JU394   treatment           1332           35
+    ## 13 N2      control              895           33
+    ## 14 N2      treatment            963           36
+
 ## 12 hour cold treatment
 
 Linear model to check for differences in length between treatment groups
@@ -410,6 +496,52 @@ H2_strain_treatment_12hrs
 
     ## [1] 0.1965214
 
+Look for differences in variance between control and treatment
+
+``` r
+#Histograms to look at normality of data
+ggplot(cold12hrs_delta_df, aes(x = median_wormlength_um)) + 
+  geom_histogram() + 
+  facet_wrap(~ Treatment) + 
+  theme_classic()
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+#Run Shapiro-Wilk test to check for normality
+normality_12hrs <- tapply(cold12hrs_delta_df$median_wormlength_um, cold12hrs_delta_df$Treatment, shapiro.test)
+print(normality_12hrs)
+```
+
+    ## $control
+    ## 
+    ##  Shapiro-Wilk normality test
+    ## 
+    ## data:  X[[i]]
+    ## W = 0.93952, p-value = 2.272e-08
+    ## 
+    ## 
+    ## $treatment
+    ## 
+    ##  Shapiro-Wilk normality test
+    ## 
+    ## data:  X[[i]]
+    ## W = 0.99011, p-value = 0.09269
+
+``` r
+#Use Levene's Test to check for differences in variance since data violates assumption of normality
+cold12hrs_var_test <- car::leveneTest(median_wormlength_um ~ Treatment, cold12hrs_delta_df, center = median)
+cold12hrs_var_test
+```
+
+    ## Levene's Test for Homogeneity of Variance (center = median)
+    ##        Df F value Pr(>F)
+    ## group   1  0.5987 0.4395
+    ##       483
+
 Delta anova and box plot
 
 ``` r
@@ -434,7 +566,7 @@ treatment12_delta_plot <- ggplot(treatment12hrs_df, aes(x = Strain, y = median_w
 treatment12_delta_plot 
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 Rxn norm for length
 
@@ -494,7 +626,7 @@ rxn_plot_12hrs <- ggplot(rxn_df_12hrs, aes(x = contidition_numeric, y=wormlength
 rxn_plot_12hrs
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 merge 12 hour plots together to make panel
 
@@ -526,7 +658,7 @@ Fig1_panelA <- cowplot::ggdraw(Fig1_panelA) + cowplot::draw_label("12-hour cold 
 Fig1_panelA
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ## 24 hour cold treatment
 
@@ -641,6 +773,52 @@ H2_strain_treatment_24hrs
 
     ## [1] 0.4531294
 
+Look for differences in variance between control and treatment
+
+``` r
+#Histograms to look at normality of data
+ggplot(cold24hrs_delta_df, aes(x = median_wormlength_um)) + 
+  geom_histogram() + 
+  facet_wrap(~ Treatment) + 
+  theme_classic()
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+#Run Shapiro-Wilk test to check for normality
+normality_24hrs <- tapply(cold24hrs_delta_df$median_wormlength_um, cold24hrs_delta_df$Treatment, shapiro.test)
+print(normality_24hrs)
+```
+
+    ## $control
+    ## 
+    ##  Shapiro-Wilk normality test
+    ## 
+    ## data:  X[[i]]
+    ## W = 0.90215, p-value = 3.179e-11
+    ## 
+    ## 
+    ## $treatment
+    ## 
+    ##  Shapiro-Wilk normality test
+    ## 
+    ## data:  X[[i]]
+    ## W = 0.98946, p-value = 0.07897
+
+``` r
+#Use Levene's Test to check for differences in variance since data violates assumption of normallity
+cold24hrs_var_test <- car::leveneTest(median_wormlength_um ~ Treatment, cold24hrs_delta_df, center = median)
+cold24hrs_var_test
+```
+
+    ## Levene's Test for Homogeneity of Variance (center = median)
+    ##        Df F value Pr(>F)
+    ## group   1  0.2077 0.6488
+    ##       471
+
 Delta box plots
 
 ``` r
@@ -668,7 +846,7 @@ treatment24_delta_plot <- ggplot(treatment24hrs_df, aes(x = Strain, y = median_w
 treatment24_delta_plot
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 Rxn norm for length
 
@@ -728,7 +906,7 @@ rxn_plot_24hrs <- ggplot(rxn_df_24hrs, aes(x = contidition_numeric, y=wormlength
 rxn_plot_24hrs
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 merge 24 hour plots together to make panel
 
@@ -745,7 +923,7 @@ Fig1_panelB <- ggdraw(Fig1_panelB) + draw_label("24-hour cold treatment",
 Fig1_panelB
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 ## combine all panels to make figure 1
 
@@ -763,11 +941,11 @@ Figure1 <- ggpubr::ggarrange(Fig1_panelA ,
 Figure1
 ```
 
-![](micropub_visualizations_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](micropub_visualizations_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 #Export based on micropub guidelines: .jpg 500 DPI with 4:3 aspect ratio 
-ggsave(filename = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/plots/micropub_figure1.jpg", plot = Figure1, dpi = 500, width = 8, height = 6)
+#ggsave(filename = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/plots/micropub_figure1.jpg", plot = Figure1, dpi = 500, width = 8, height = 6)
 ```
 
 ## Information about R session
@@ -795,11 +973,11 @@ sessionInfo()
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ##  [1] cowplot_1.1.3   gridExtra_2.3   ggpubr_0.6.0    lmerTest_3.1-3 
-    ##  [5] lme4_1.1-37     Matrix_1.7-0    agricolae_1.3-7 lubridate_1.9.3
-    ##  [9] forcats_1.0.0   stringr_1.5.1   dplyr_1.1.4     purrr_1.0.2    
-    ## [13] readr_2.1.5     tidyr_1.3.1     tibble_3.2.1    ggplot2_3.5.2  
-    ## [17] tidyverse_2.0.0
+    ##  [1] car_3.1-2       carData_3.0-5   cowplot_1.1.3   gridExtra_2.3  
+    ##  [5] ggpubr_0.6.0    lmerTest_3.1-3  lme4_1.1-37     Matrix_1.7-0   
+    ##  [9] agricolae_1.3-7 lubridate_1.9.3 forcats_1.0.0   stringr_1.5.1  
+    ## [13] dplyr_1.1.4     purrr_1.0.2     readr_2.1.5     tidyr_1.3.1    
+    ## [17] tibble_3.2.1    ggplot2_3.5.2   tidyverse_2.0.0
     ## 
     ## loaded via a namespace (and not attached):
     ##  [1] gtable_0.3.5        xfun_0.44           rstatix_0.7.2      
@@ -808,18 +986,16 @@ sessionInfo()
     ## [10] generics_0.1.3      fansi_1.0.6         highr_0.11         
     ## [13] cluster_2.1.6       AlgDesign_1.2.1.1   pkgconfig_2.0.3    
     ## [16] lifecycle_1.0.4     farver_2.1.2        compiler_4.4.0     
-    ## [19] textshaping_0.4.0   munsell_0.5.1       carData_3.0-5      
-    ## [22] htmltools_0.5.8.1   yaml_2.3.8          pillar_1.9.0       
-    ## [25] car_3.1-2           nloptr_2.0.3        MASS_7.3-60.2      
-    ## [28] reformulas_0.4.0    boot_1.3-30         abind_1.4-5        
-    ## [31] nlme_3.1-164        tidyselect_1.2.1    digest_0.6.35      
-    ## [34] stringi_1.8.4       labeling_0.4.3      splines_4.4.0      
-    ## [37] fastmap_1.2.0       grid_4.4.0          colorspace_2.1-0   
-    ## [40] cli_3.6.2           magrittr_2.0.3      utf8_1.2.4         
-    ## [43] broom_1.0.6         withr_3.0.2         scales_1.3.0       
-    ## [46] backports_1.5.0     timechange_0.3.0    rmarkdown_2.27     
-    ## [49] ggsignif_0.6.4      ragg_1.3.2          hms_1.1.3          
-    ## [52] evaluate_0.23       knitr_1.47          rbibutils_2.3      
-    ## [55] rlang_1.1.3         Rcpp_1.0.12         glue_1.7.0         
-    ## [58] rstudioapi_0.16.0   minqa_1.2.7         R6_2.5.1           
-    ## [61] systemfonts_1.2.3
+    ## [19] munsell_0.5.1       htmltools_0.5.8.1   yaml_2.3.8         
+    ## [22] pillar_1.9.0        nloptr_2.0.3        MASS_7.3-60.2      
+    ## [25] reformulas_0.4.0    boot_1.3-30         abind_1.4-5        
+    ## [28] nlme_3.1-164        tidyselect_1.2.1    digest_0.6.35      
+    ## [31] stringi_1.8.4       labeling_0.4.3      splines_4.4.0      
+    ## [34] fastmap_1.2.0       grid_4.4.0          colorspace_2.1-0   
+    ## [37] cli_3.6.2           magrittr_2.0.3      utf8_1.2.4         
+    ## [40] broom_1.0.6         withr_3.0.2         scales_1.3.0       
+    ## [43] backports_1.5.0     timechange_0.3.0    rmarkdown_2.27     
+    ## [46] ggsignif_0.6.4      hms_1.1.3           evaluate_0.23      
+    ## [49] knitr_1.47          rbibutils_2.3       rlang_1.1.3        
+    ## [52] Rcpp_1.0.12         glue_1.7.0          rstudioapi_0.16.0  
+    ## [55] minqa_1.2.7         R6_2.5.1

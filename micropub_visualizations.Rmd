@@ -150,11 +150,15 @@ cold12hrs_sample_sizes <- cold12hrs_delta_df %>%
   dplyr::summarise(number_animals = sum(n, na.rm = TRUE), 
             number_wells = n())
 
+cold12hrs_sample_sizes
+
 #get sample sizes for 24hrs dataset
 cold24hrs_sample_sizes <- cold24hrs_delta_df %>% 
   dplyr::group_by(Strain, Treatment) %>% 
   dplyr::summarise(number_animals = sum(n, na.rm = TRUE), 
             number_wells = n())
+
+cold24hrs_sample_sizes
 ```
 
 
@@ -488,7 +492,7 @@ Figure1 <- ggpubr::ggarrange(Fig1_panelA ,
 Figure1
 
 #Export based on micropub guidelines: .jpg 500 DPI with 4:3 aspect ratio 
-ggsave(filename = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/plots/micropub_figure1.jpg", plot = Figure1, dpi = 500, width = 8, height = 6)
+#ggsave(filename = "C:/Users/amand/OneDrive - University of Toronto/Documents/Academics/PhD/Cold_worms/plots/micropub_figure1.jpg", plot = Figure1, dpi = 500, width = 8, height = 6)
 
 ```
 
